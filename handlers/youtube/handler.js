@@ -1,7 +1,14 @@
 import * as fse from 'fs-extra';
 import getVideoId from 'get-video-id';
+import { YtDlp } from 'ytdlp-nodejs';
 
 import * as db from '../../db/index.js';
+
+const ytdlp = new YtDlp();
+
+function getYoutubeUrl(youtubeId) {
+    return `https://www.youtube.com/watch?v=${ youtubeId }`;
+}
 
 /**
  * Добавление видео с Youtube
@@ -105,7 +112,9 @@ export async function addYoutubeVideo(body) {
         hasTransaction = false;
     }
     catch (e) {
-        console.error();
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
     }
     finally {
         if (hasTransaction) {
@@ -127,11 +136,74 @@ export async function addYoutubeVideo(body) {
             }
 
             if (!data.message.path) {
-                // todo:
-                // downloadYoutubeVideo + saveYoutubeVideo
+                downloadYoutubeVideo({ id: data.message.id }).then();
             }
         }
 
+    }
+
+    return data;
+}
+
+/**
+ * Скачивание видео с Youtube
+ * @param { number } id - ID в таблице youtube
+ * */
+async function downloadYoutubeVideo({ id }) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = downloadYoutubeVideo.name;
+
+    try {
+        const queryYoutube = `SELECT "youtubeId", "isAudioOnly"
+                              FROM youtube
+                              WHERE id = $1`;
+        const resYoutube = await db.query(queryYoutube, [ id ]);
+
+        if (resYoutube.rows.length <= 0) {
+            console.error(`${ funcName } Запись в таблице youtube не найдена (id: ${ id })`);
+        }
+
+        const { youtubeId, isAudioOnly } = resYoutube.rows[0];
+
+        let filter = 'mergevideo';
+        let type = 'mp4';
+
+        if (isAudioOnly) {
+            filter = 'audioonly';
+            type = 'mp3';
+        }
+
+        const output = await ytdlp.downloadAsync(
+            getYoutubeUrl(youtubeId),
+            {
+                onProgress: (progress) => {
+                    console.log(progress);
+                },
+                format:     {
+                    filter: filter,
+                    type:   type,
+                },
+                output:     `./public/youtube/${ youtubeId }/${ filter }.%(ext)s`,
+            },
+        );
+
+        console.log(output);
+
+        data = {
+            message:    {
+                path: `./public/youtube/${ youtubeId }/${ filter }.${ type }`,
+            },
+            statusCode: 200,
+        };
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
     }
 
     return data;
