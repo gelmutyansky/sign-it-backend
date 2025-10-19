@@ -1,11 +1,7 @@
 import * as fse from 'fs-extra';
+import getVideoId from 'get-video-id';
 
 import * as db from '../../db/index.js';
-
-function getYoutubeIdFromUrl(youtubeUrl) {
-    const youtubeIdRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i;
-    return youtubeIdRegex.exec(youtubeUrl)[1];
-}
 
 /**
  * Добавление видео с Youtube
@@ -33,7 +29,7 @@ export async function addYoutubeVideo(body) {
             redownload = false,
         } = body;
 
-        const youtubeId = getYoutubeIdFromUrl(youtubeUrl);
+        const { id: youtubeId } = getVideoId(youtubeUrl);
 
         await client.query('BEGIN');
         hasTransaction = true;
