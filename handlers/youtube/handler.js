@@ -1,8 +1,10 @@
 import * as fse from 'fs-extra';
 import getVideoId from 'get-video-id';
 import { YtDlp } from 'ytdlp-nodejs';
+import { extname } from 'path';
 
 import * as db from '../../db/index.js';
+import { downloadImage } from '../../helpers/axios.js';
 
 const ytdlp = new YtDlp();
 
@@ -148,6 +150,7 @@ export async function addYoutubeVideo(body) {
 /**
  * Скачивание видео с Youtube
  * @param { number } id - ID в таблице youtube
+ * @returns { Promise<{ message: string, statusCode: number }>}
  * */
 async function downloadYoutubeVideo({ id }) {
     let data = {
@@ -156,6 +159,8 @@ async function downloadYoutubeVideo({ id }) {
     };
 
     const funcName = downloadYoutubeVideo.name;
+    let client;
+    let hasTransaction = false;
 
     try {
         const queryYoutube = `SELECT "youtubeId", "isAudioOnly"
@@ -168,6 +173,18 @@ async function downloadYoutubeVideo({ id }) {
         }
 
         const { youtubeId, isAudioOnly } = resYoutube.rows[0];
+        const youtubeUrl = getYoutubeUrl(youtubeId);
+        const folder = `./public/${ youtubeId }`;
+        await fse.ensureDir(folder);
+
+        const {
+            thumbnail: thumbnailUrl,
+            duration:  duration,
+            fulltitle: title,
+        } = await ytdlp.getInfoAsync(youtubeUrl);
+
+        let thumbnailPath = `${ folder }/thumbnail${ extname(thumbnailUrl) }`;
+        await downloadImage(thumbnailUrl, thumbnailPath);
 
         let filter = 'mergevideo';
         let type = 'mp4';
@@ -178,7 +195,7 @@ async function downloadYoutubeVideo({ id }) {
         }
 
         const output = await ytdlp.downloadAsync(
-            getYoutubeUrl(youtubeId),
+            youtubeUrl,
             {
                 onProgress: (progress) => {
                     console.log(progress);
@@ -187,23 +204,53 @@ async function downloadYoutubeVideo({ id }) {
                     filter: filter,
                     type:   type,
                 },
-                output:     `./public/youtube/${ youtubeId }/${ filter }.%(ext)s`,
+                output:     `${ folder }/${ filter }.%(ext)s`,
             },
         );
 
         console.log(output);
 
-        data = {
-            message:    {
-                path: `./public/youtube/${ youtubeId }/${ filter }.${ type }`,
-            },
-            statusCode: 200,
-        };
+        const videoPath = `${ folder }/${ filter }.${ type }`;
+
+        client = await db.getClient();
+
+        await client.query('BEGIN');
+        hasTransaction = true;
+
+        const queryUpdateYoutube = `UPDATE youtube
+                                    SET path            = $2,
+                                        name            = $3,
+                                        "thumbnailPath" = $4,
+                                        duration        = $5
+                                    WHERE id = $1`;
+        const resUpdateYoutube = await client.query(queryUpdateYoutube, [ id, videoPath, title, thumbnailPath, duration ]);
+
+        if (resUpdateYoutube.rowCount > 0) {
+            await client.query('COMMIT');
+            hasTransaction = false;
+
+            data = {
+                message:    'success',
+                statusCode: 200,
+            };
+        }
+        else {
+            console.error(`${ funcName } Не обновлена таблица youtube (id: ${ id }, videoPath: ${ videoPath }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration })`);
+        }
     }
     catch (e) {
         console.error(`${ funcName }: ERROR`);
         console.error(e.message);
         console.error(e.stack);
+    }
+    finally {
+        if (client) {
+            if (hasTransaction) {
+                await client.query('ROLLBACK');
+            }
+
+            client.release();
+        }
     }
 
     return data;
