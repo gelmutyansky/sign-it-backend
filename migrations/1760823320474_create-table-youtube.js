@@ -10,7 +10,7 @@ export const shorthands = undefined;
 export const up = (pgm) => {
     pgm.createTable('youtube', {
         id:          {
-            type:       'bigserial',
+            type:       'serial',
             primaryKey: true,
         },
         youtubeId:   {
