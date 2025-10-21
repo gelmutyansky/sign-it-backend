@@ -30,14 +30,12 @@ export default async function(fastify, opts) {
                                     },
                                 },
                             },
-                            statusCode: { type: 'integer' },
                         },
                     },
                     400: {
                         type:       'object',
                         properties: {
-                            message:    { type: 'string' },
-                            statusCode: { type: 'integer' },
+                            message: { type: 'string' },
                         },
                     },
                 },
