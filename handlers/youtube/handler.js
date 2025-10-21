@@ -255,3 +255,62 @@ async function downloadYoutubeVideo({ id }) {
 
     return data;
 }
+
+/**
+ * Поиск видео с Youtube
+ * @param { Object } body
+ * @param { string } body.q
+ * @param { boolean? } body.isAudioOnly
+ * @returns { Promise<{ message: string | { videos: Array<{ id: string, youtubeId: string, name: string | null, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number }>}, statusCode: number }> }
+ * */
+export async function searchYoutubeVideo(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = searchYoutubeVideo.name;
+
+    try {
+        const {
+            q,
+            isAudioOnly = null,
+        } = body;
+
+        let videos = [];
+
+        if (q) {
+            const searchStr = `%${ q.toLocaleLowerCase() }%`;
+
+            const queryYoutube = `SELECT id              AS "id",
+                                         "youtubeId"     AS "youtubeId",
+                                         name            AS "name",
+                                         path            AS "path",
+                                         "isAudioOnly"   AS "isAudioOnly",
+                                         "thumbnailPath" AS "thumbnailPath",
+                                         duration        AS "duration"
+                                  FROM youtube
+                                  WHERE LOWER("name") LIKE $1
+                                    AND ($2::boolean IS NULL OR "isAudioOnly" = $2)
+                                  ORDER BY LOWER("name") LIKE $1 DESC, "youtubeId" DESC
+                                  LIMIT 10`;
+            const resYoutube = await db.query(queryYoutube, [ searchStr, isAudioOnly ]);
+
+            videos = resYoutube.rows;
+        }
+
+        data = {
+            message:    {
+                videos: videos,
+            },
+            statusCode: 200,
+        };
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+
+    return data;
+}
