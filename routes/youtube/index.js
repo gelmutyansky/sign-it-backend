@@ -57,7 +57,10 @@ export default async function(fastify, opts) {
                 query:    {
                     type:       'object',
                     properties: {
-                        q:           { type: 'string' },
+                        q:           {
+                            type:      'string',
+                            minLength: 3,
+                        },
                         isAudioOnly: { type: 'boolean' },
                     },
                     required:   [

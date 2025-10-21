@@ -277,27 +277,23 @@ export async function searchYoutubeVideo(body) {
             isAudioOnly = null,
         } = body;
 
-        let videos = [];
+        const searchStr = `%${ q.toLocaleLowerCase() }%`;
 
-        if (q) {
-            const searchStr = `%${ q.toLocaleLowerCase() }%`;
+        const queryYoutube = `SELECT id              AS "id",
+                                     "youtubeId"     AS "youtubeId",
+                                     name            AS "name",
+                                     path            AS "path",
+                                     "isAudioOnly"   AS "isAudioOnly",
+                                     "thumbnailPath" AS "thumbnailPath",
+                                     duration        AS "duration"
+                              FROM youtube
+                              WHERE LOWER("name") LIKE $1
+                                AND ($2::boolean IS NULL OR "isAudioOnly" = $2)
+                              ORDER BY LOWER("name") LIKE $1 DESC, "youtubeId" DESC
+                              LIMIT 10`;
+        const resYoutube = await db.query(queryYoutube, [ searchStr, isAudioOnly ]);
 
-            const queryYoutube = `SELECT id              AS "id",
-                                         "youtubeId"     AS "youtubeId",
-                                         name            AS "name",
-                                         path            AS "path",
-                                         "isAudioOnly"   AS "isAudioOnly",
-                                         "thumbnailPath" AS "thumbnailPath",
-                                         duration        AS "duration"
-                                  FROM youtube
-                                  WHERE LOWER("name") LIKE $1
-                                    AND ($2::boolean IS NULL OR "isAudioOnly" = $2)
-                                  ORDER BY LOWER("name") LIKE $1 DESC, "youtubeId" DESC
-                                  LIMIT 10`;
-            const resYoutube = await db.query(queryYoutube, [ searchStr, isAudioOnly ]);
-
-            videos = resYoutube.rows;
-        }
+        const videos = resYoutube.rows;
 
         data = {
             message:    {
