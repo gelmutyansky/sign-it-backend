@@ -311,3 +311,54 @@ export async function searchYoutubeVideo(body) {
 
     return data;
 }
+
+/**
+ * Получение информации о видео с Youtube
+ * @param { Object } body
+ * @param { number } body.id
+ * @returns { Promise<{ message: string | { video: { youtubeId: string, name: string | null, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number }}, statusCode: number }>}
+ * */
+export async function getYoutubeVideo(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = getYoutubeVideo.name;
+
+    try {
+        const { id } = body;
+
+        const queryYoutube = `SELECT "youtubeId"     AS "youtubeId",
+                                     name            AS "name",
+                                     path            AS "path",
+                                     "isAudioOnly"   AS "isAudioOnly",
+                                     "thumbnailPath" AS "thumbnailPath",
+                                     duration        AS "duration"
+                              FROM youtube
+                              WHERE id = $1`;
+        const resYoutube = await db.query(queryYoutube, [ id ]);
+
+        if (resYoutube.rows.length > 0) {
+            data = {
+                message:    {
+                    video: resYoutube.rows[0],
+                },
+                statusCode: 200,
+            };
+        }
+        else {
+            data = {
+                message:    'not found',
+                statusCode: 404,
+            };
+        }
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+
+    return data;
+}

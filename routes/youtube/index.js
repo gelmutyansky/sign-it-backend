@@ -119,4 +119,67 @@ export default async function(fastify, opts) {
             return reply.send(data);
         },
     );
+
+    fastify.get(
+        '/get',
+        {
+            schema: {
+                query:    {
+                    type:       'object',
+                    properties: {
+                        id: { type: 'number' },
+                    },
+                    required:   [
+                        'id',
+                    ],
+                },
+                response: {
+                    200: {
+                        type:       'object',
+                        properties: {
+                            message: {
+                                type:       'object',
+                                properties: {
+                                    video: {
+                                        type:       'object',
+                                        properties: {
+                                            id:            { type: 'number' },
+                                            youtubeId:     { type: 'string' },
+                                            name:          {
+                                                type:     'string',
+                                                nullable: true,
+                                            },
+                                            path:          {
+                                                type:     'string',
+                                                nullable: true,
+                                            },
+                                            isAudioOnly:   { type: 'boolean' },
+                                            thumbnailPath: {
+                                                type:     'string',
+                                                nullable: true,
+                                            },
+                                            duration:      { type: 'number' },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { statusCode, ...data } = await youtube.getYoutubeVideo(request.query);
+            if (statusCode !== 200) {
+                reply.status(statusCode);
+            }
+            return reply.send(data);
+        },
+    );
 }
