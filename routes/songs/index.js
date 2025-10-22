@@ -40,7 +40,7 @@ export default async function(fastify, opts) {
         async (request, reply) => {
             const { statusCode, ...data } = await songs.addSong(request.body);
             if (statusCode !== 200) {
-                reply.status(400);
+                reply.status(statusCode);
             }
             return reply.send(data);
         },

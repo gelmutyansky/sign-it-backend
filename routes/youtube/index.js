@@ -44,7 +44,7 @@ export default async function(fastify, opts) {
         async (request, reply) => {
             const { statusCode, ...data } = await youtube.addYoutubeVideo(request.body);
             if (statusCode !== 200) {
-                reply.status(400);
+                reply.status(statusCode);
             }
             return reply.send(data);
         },
@@ -79,7 +79,7 @@ export default async function(fastify, opts) {
                                         items: {
                                             type:       'object',
                                             properties: {
-                                                id:            { type: 'string' },
+                                                id:            { type: 'number' },
                                                 youtubeId:     { type: 'string' },
                                                 name:          {
                                                     type:     'string',
@@ -114,7 +114,7 @@ export default async function(fastify, opts) {
         async (request, reply) => {
             const { statusCode, ...data } = await youtube.searchYoutubeVideo(request.query);
             if (statusCode !== 200) {
-                reply.status(400);
+                reply.status(statusCode);
             }
             return reply.send(data);
         },
