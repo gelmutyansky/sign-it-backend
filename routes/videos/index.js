@@ -23,7 +23,13 @@ export default async function(fastify, opts) {
                             message: {
                                 type:       'object',
                                 properties: {
-                                    id:   { type: 'number' },
+                                    id:   {
+                                        type: 'number',
+                                    },
+                                    name: {
+                                        type:     'string',
+                                        nullable: true,
+                                    },
                                     path: {
                                         type:     'string',
                                         nullable: true,

@@ -27,7 +27,7 @@ function getYoutubeUrl(youtubeId) {
  * @param { string } body.youtubeUrl
  * @param { boolean } body.isAudioOnly
  * @param { boolean } body.redownload
- * @returns { Promise<{ message: string | { id: number, path: string | null }, statusCode: number }> }
+ * @returns { Promise<{ message: string | { id: number, name: string | null, path: string | null }, statusCode: number }> }
  * */
 export async function addVideoFromYoutube(body) {
     let data = {
@@ -53,6 +53,7 @@ export async function addVideoFromYoutube(body) {
         hasTransaction = true;
 
         const queryExistingVideo = `SELECT id   AS "id",
+                                           name AS "name",
                                            path AS "path"
                                     FROM videos
                                     WHERE "youtubeId" = $1
@@ -61,7 +62,7 @@ export async function addVideoFromYoutube(body) {
         const resExistingVideo = await client.query(queryExistingVideo, [ youtubeId, isAudioOnly ]);
 
         if (resExistingVideo.rows.length > 0) {
-            const { id, path } = resExistingVideo.rows[0];
+            const { id, name, path } = resExistingVideo.rows[0];
             if (redownload) {
                 if (path) {
                     const queryUpdateVideo = `UPDATE videos
@@ -81,6 +82,7 @@ export async function addVideoFromYoutube(body) {
                 data = {
                     message:    {
                         id:   id,
+                        name: name,
                         path: null,
                     },
                     statusCode: 200,
@@ -90,6 +92,7 @@ export async function addVideoFromYoutube(body) {
                 data = {
                     message:    {
                         id:   id,
+                        name: name,
                         path: path,
                     },
                     statusCode: 200,
@@ -99,15 +102,16 @@ export async function addVideoFromYoutube(body) {
         else {
             const queryInsertVideo = `INSERT INTO videos ("youtubeId", "isAudioOnly")
                                       VALUES ($1, $2)
-                                      RETURNING id, path`;
+                                      RETURNING id, name, path`;
             const resInsertVideo = await client.query(queryInsertVideo, [ youtubeId, isAudioOnly ]);
 
             if (resInsertVideo.rowCount > 0 && resInsertVideo.rows.length > 0) {
-                const { id, path } = resInsertVideo.rows[0];
+                const { id, name, path } = resInsertVideo.rows[0];
 
                 data = {
                     message:    {
                         id:   id,
+                        name: name,
                         path: path,
                     },
                     statusCode: 200,
