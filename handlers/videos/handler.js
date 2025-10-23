@@ -150,6 +150,10 @@ export async function addVideoFromYoutube(body) {
                 });
             }
 
+            if (!data.message.name) {
+                updateVideoFromYoutube({ id: data.message.id }).then();
+            }
+
             if (!data.message.path) {
                 downloadVideoFromYoutube({ id: data.message.id }).then();
             }
@@ -231,6 +235,104 @@ async function downloadVideoFromYoutube({ id }) {
 
         if (resUpdateVideo.rowCount <= 0) {
             console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, videoPath: ${ videoPath })`);
+            return data;
+        }
+
+        await client.query('COMMIT');
+        hasTransaction = false;
+
+        data = {
+            message:    'success',
+            statusCode: 200,
+        };
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+    finally {
+        if (client) {
+            if (hasTransaction) {
+                await client.query('ROLLBACK');
+            }
+
+            client.release();
+        }
+    }
+
+    return data;
+}
+
+/**
+ * Обновление информации о видео с Youtube
+ * @param { number } id - ID в таблице video
+ * @returns { Promise<{ message: string, statusCode: number }>}
+ * */
+async function updateVideoFromYoutube({ id }) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = updateVideoFromYoutube.name;
+    let client;
+    let hasTransaction = false;
+
+    try {
+        const queryVideo = `SELECT "youtubeId",
+                                   "name",
+                                   "thumbnailPath",
+                                   "duration"
+                            FROM videos
+                            WHERE id = $1`;
+        const resVideo = await db.query(queryVideo, [ id ]);
+
+        if (resVideo.rows.length > 0) {
+            const { name, thumbnailPath, duration } = resVideo.rows[0];
+
+            if (name && thumbnailPath && duration) {
+                data = {
+                    message:    'already filled',
+                    statusCode: 200,
+                };
+
+                return data;
+            }
+        }
+        else {
+            console.error(`${ funcName } Запись в таблице video не найдена (id: ${ id })`);
+        }
+
+        const { youtubeId } = resVideo.rows[0];
+        const youtubeUrl = getYoutubeUrl(youtubeId);
+        const folder = `./public/${ youtubeId }`;
+        await fse.ensureDir(folder);
+
+        const {
+            thumbnail: thumbnailUrl,
+            duration:  duration,
+            fulltitle: title,
+        } = await ytdlp.getInfoAsync(youtubeUrl);
+
+        const thumbnailPath = `${ folder }/thumbnail${ extname(thumbnailUrl) }`;
+        await downloadImage(thumbnailUrl, thumbnailPath);
+
+        client = await db.getClient();
+
+        await client.query('BEGIN');
+        hasTransaction = true;
+
+        const queryUpdateVideo = `UPDATE videos
+                                  SET name            = $2,
+                                      "thumbnailPath" = $3,
+                                      duration        = $4,
+                                      "thumbnailUrl"  = $5
+                                  WHERE id = $1`;
+        const resUpdateVideo = await client.query(queryUpdateVideo, [ id, title, thumbnailPath, duration, thumbnailUrl ]);
+
+        if (resUpdateVideo.rowCount <= 0) {
+            console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration }, thumbnailUrl: ${ thumbnailUrl })`);
             return data;
         }
 
