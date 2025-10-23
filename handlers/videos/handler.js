@@ -190,21 +190,19 @@ async function downloadVideoFromYoutube({ id }) {
         const folder = `./public/${ youtubeId }`;
         await fse.ensureDir(folder);
 
-        const {
-            thumbnail: thumbnailUrl,
-            duration:  duration,
-            fulltitle: title,
-        } = await ytdlp.getInfoAsync(youtubeUrl);
-
-        let thumbnailPath = `${ folder }/thumbnail${ extname(thumbnailUrl) }`;
-        await downloadImage(thumbnailUrl, thumbnailPath);
-
-        let filter = 'mergevideo';
-        let type = 'mp4';
+        let downloadOptions = {
+            output: `${ folder }/video.%(ext)s`,
+            format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        };
+        let expectedVideoPath = `${ folder }/video.mp4`;
 
         if (isAudioOnly) {
-            filter = 'audioonly';
-            type = 'mp3';
+            downloadOptions = {
+                output:       `${ folder }/audio.%(ext)s`,
+                extractAudio: true,
+                audioFormat:  'm4a',
+            };
+            expectedVideoPath = `${ folder }/audio.m4a`;
         }
 
         const output = await ytdlp.downloadAsync(
@@ -213,17 +211,13 @@ async function downloadVideoFromYoutube({ id }) {
                 onProgress: (progress) => {
                     console.log(progress);
                 },
-                format:     {
-                    filter: filter,
-                    type:   type,
-                },
-                output:     `${ folder }/${ filter }.%(ext)s`,
+                ...downloadOptions,
             },
         );
 
         console.log(output);
 
-        const videoPath = `${ folder }/${ filter }.${ type }`;
+        const videoPath = expectedVideoPath;
 
         client = await db.getClient();
 
@@ -231,25 +225,22 @@ async function downloadVideoFromYoutube({ id }) {
         hasTransaction = true;
 
         const queryUpdateVideo = `UPDATE videos
-                                  SET path            = $2,
-                                      name            = $3,
-                                      "thumbnailPath" = $4,
-                                      duration        = $5
+                                  SET path = $2
                                   WHERE id = $1`;
-        const resUpdateVideo = await client.query(queryUpdateVideo, [ id, videoPath, title, thumbnailPath, duration ]);
+        const resUpdateVideo = await client.query(queryUpdateVideo, [ id, videoPath ]);
 
-        if (resUpdateVideo.rowCount > 0) {
-            await client.query('COMMIT');
-            hasTransaction = false;
+        if (resUpdateVideo.rowCount <= 0) {
+            console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, videoPath: ${ videoPath })`);
+            return data;
+        }
 
-            data = {
-                message:    'success',
-                statusCode: 200,
-            };
-        }
-        else {
-            console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, videoPath: ${ videoPath }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration })`);
-        }
+        await client.query('COMMIT');
+        hasTransaction = false;
+
+        data = {
+            message:    'success',
+            statusCode: 200,
+        };
     }
     catch (e) {
         console.error(`${ funcName }: ERROR`);
