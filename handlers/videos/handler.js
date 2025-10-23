@@ -21,13 +21,13 @@ function getYoutubeUrl(youtubeId) {
  * @param { boolean } body.redownload
  * @returns { Promise<{ message: string | { id: number, path: string | null }, statusCode: number }> }
  * */
-export async function addYoutubeVideo(body) {
+export async function addVideoFromYoutube(body) {
     let data = {
         message:    'error',
         statusCode: 400,
     };
 
-    const funcName = addYoutubeVideo.name;
+    const funcName = addVideoFromYoutube.name;
     let hasTransaction = false;
     let pathToDelete;
     const client = await db.getClient();
@@ -44,24 +44,24 @@ export async function addYoutubeVideo(body) {
         await client.query('BEGIN');
         hasTransaction = true;
 
-        const queryExistingYoutube = `SELECT id   AS "id",
-                                             path AS "path"
-                                      FROM youtube
-                                      WHERE "youtubeId" = $1
-                                        AND "isAudioOnly" = $2
-                                          FOR UPDATE`;
-        const resExistingYoutube = await client.query(queryExistingYoutube, [ youtubeId, isAudioOnly ]);
+        const queryExistingVideo = `SELECT id   AS "id",
+                                           path AS "path"
+                                    FROM videos
+                                    WHERE "youtubeId" = $1
+                                      AND "isAudioOnly" = $2
+                                        FOR UPDATE`;
+        const resExistingVideo = await client.query(queryExistingVideo, [ youtubeId, isAudioOnly ]);
 
-        if (resExistingYoutube.rows.length > 0) {
-            const { id, path } = resExistingYoutube.rows[0];
+        if (resExistingVideo.rows.length > 0) {
+            const { id, path } = resExistingVideo.rows[0];
             if (redownload) {
                 if (path) {
-                    const queryUpdateYoutube = `UPDATE youtube
-                                                SET path = NULL
-                                                WHERE id = $1`;
-                    const resUpdateYoutube = await client.query(queryUpdateYoutube, [ id ]);
+                    const queryUpdateVideo = `UPDATE videos
+                                              SET path = NULL
+                                              WHERE id = $1`;
+                    const resUpdateVideo = await client.query(queryUpdateVideo, [ id ]);
 
-                    if (resUpdateYoutube.rowCount > 0) {
+                    if (resUpdateVideo.rowCount > 0) {
                         pathToDelete = path;
                     }
                     else {
@@ -89,13 +89,13 @@ export async function addYoutubeVideo(body) {
             }
         }
         else {
-            const queryInsertYoutube = `INSERT INTO youtube ("youtubeId", "isAudioOnly")
-                                        VALUES ($1, $2)
-                                        RETURNING id, path`;
-            const resInsertYoutube = await client.query(queryInsertYoutube, [ youtubeId, isAudioOnly ]);
+            const queryInsertVideo = `INSERT INTO videos ("youtubeId", "isAudioOnly")
+                                      VALUES ($1, $2)
+                                      RETURNING id, path`;
+            const resInsertVideo = await client.query(queryInsertVideo, [ youtubeId, isAudioOnly ]);
 
-            if (resInsertYoutube.rowCount > 0 && resInsertYoutube.rows.length > 0) {
-                const { id, path } = resInsertYoutube.rows[0];
+            if (resInsertVideo.rowCount > 0 && resInsertVideo.rows.length > 0) {
+                const { id, path } = resInsertVideo.rows[0];
 
                 data = {
                     message:    {
@@ -106,7 +106,7 @@ export async function addYoutubeVideo(body) {
                 };
             }
             else {
-                console.error(`${ funcName } Не получилось добавить запись в таблицу ютуба (youtubeId: ${ youtubeId }, isAudioOnly: ${ isAudioOnly })`);
+                console.error(`${ funcName } Не получилось добавить запись в таблицу видео (youtubeId: ${ youtubeId }, isAudioOnly: ${ isAudioOnly })`);
                 return data;
             }
         }
@@ -139,7 +139,7 @@ export async function addYoutubeVideo(body) {
             }
 
             if (!data.message.path) {
-                downloadYoutubeVideo({ id: data.message.id }).then();
+                downloadVideoFromYoutube({ id: data.message.id }).then();
             }
         }
 
@@ -150,30 +150,30 @@ export async function addYoutubeVideo(body) {
 
 /**
  * Скачивание видео с Youtube
- * @param { number } id - ID в таблице youtube
+ * @param { number } id - ID в таблице video
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function downloadYoutubeVideo({ id }) {
+async function downloadVideoFromYoutube({ id }) {
     let data = {
         message:    'error',
         statusCode: 400,
     };
 
-    const funcName = downloadYoutubeVideo.name;
+    const funcName = downloadVideoFromYoutube.name;
     let client;
     let hasTransaction = false;
 
     try {
-        const queryYoutube = `SELECT "youtubeId", "isAudioOnly"
-                              FROM youtube
-                              WHERE id = $1`;
-        const resYoutube = await db.query(queryYoutube, [ id ]);
+        const queryVideo = `SELECT "youtubeId", "isAudioOnly"
+                            FROM videos
+                            WHERE id = $1`;
+        const resVideo = await db.query(queryVideo, [ id ]);
 
-        if (resYoutube.rows.length <= 0) {
-            console.error(`${ funcName } Запись в таблице youtube не найдена (id: ${ id })`);
+        if (resVideo.rows.length <= 0) {
+            console.error(`${ funcName } Запись в таблице video не найдена (id: ${ id })`);
         }
 
-        const { youtubeId, isAudioOnly } = resYoutube.rows[0];
+        const { youtubeId, isAudioOnly } = resVideo.rows[0];
         const youtubeUrl = getYoutubeUrl(youtubeId);
         const folder = `./public/${ youtubeId }`;
         await fse.ensureDir(folder);
@@ -218,15 +218,15 @@ async function downloadYoutubeVideo({ id }) {
         await client.query('BEGIN');
         hasTransaction = true;
 
-        const queryUpdateYoutube = `UPDATE youtube
-                                    SET path            = $2,
-                                        name            = $3,
-                                        "thumbnailPath" = $4,
-                                        duration        = $5
-                                    WHERE id = $1`;
-        const resUpdateYoutube = await client.query(queryUpdateYoutube, [ id, videoPath, title, thumbnailPath, duration ]);
+        const queryUpdateVideo = `UPDATE videos
+                                  SET path            = $2,
+                                      name            = $3,
+                                      "thumbnailPath" = $4,
+                                      duration        = $5
+                                  WHERE id = $1`;
+        const resUpdateVideo = await client.query(queryUpdateVideo, [ id, videoPath, title, thumbnailPath, duration ]);
 
-        if (resUpdateYoutube.rowCount > 0) {
+        if (resUpdateVideo.rowCount > 0) {
             await client.query('COMMIT');
             hasTransaction = false;
 
@@ -236,7 +236,7 @@ async function downloadYoutubeVideo({ id }) {
             };
         }
         else {
-            console.error(`${ funcName } Не обновлена таблица youtube (id: ${ id }, videoPath: ${ videoPath }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration })`);
+            console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, videoPath: ${ videoPath }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration })`);
         }
     }
     catch (e) {
@@ -258,19 +258,19 @@ async function downloadYoutubeVideo({ id }) {
 }
 
 /**
- * Поиск видео с Youtube
+ * Поиск видео
  * @param { Object } body
  * @param { string } body.q
  * @param { boolean? } body.isAudioOnly
  * @returns { Promise<{ message: string | { videos: Array<{ id: string, youtubeId: string, name: string | null, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number }>}, statusCode: number }> }
  * */
-export async function searchYoutubeVideo(body) {
+export async function searchVideo(body) {
     let data = {
         message:    'error',
         statusCode: 400,
     };
 
-    const funcName = searchYoutubeVideo.name;
+    const funcName = searchVideo.name;
 
     try {
         const {
@@ -280,21 +280,21 @@ export async function searchYoutubeVideo(body) {
 
         const searchStr = `%${ q.toLocaleLowerCase() }%`;
 
-        const queryYoutube = `SELECT id              AS "id",
-                                     "youtubeId"     AS "youtubeId",
-                                     name            AS "name",
-                                     path            AS "path",
-                                     "isAudioOnly"   AS "isAudioOnly",
-                                     "thumbnailPath" AS "thumbnailPath",
-                                     duration        AS "duration"
-                              FROM youtube
-                              WHERE LOWER("name") LIKE $1
-                                AND ($2::boolean IS NULL OR "isAudioOnly" = $2)
-                              ORDER BY LOWER("name") LIKE $1 DESC, "youtubeId" DESC
-                              LIMIT 10`;
-        const resYoutube = await db.query(queryYoutube, [ searchStr, isAudioOnly ]);
+        const queryVideos = `SELECT id              AS "id",
+                                    "youtubeId"     AS "youtubeId",
+                                    name            AS "name",
+                                    path            AS "path",
+                                    "isAudioOnly"   AS "isAudioOnly",
+                                    "thumbnailPath" AS "thumbnailPath",
+                                    duration        AS "duration"
+                             FROM videos
+                             WHERE LOWER("name") LIKE $1
+                               AND ($2::boolean IS NULL OR "isAudioOnly" = $2)
+                             ORDER BY LOWER("name") LIKE $1 DESC, id DESC
+                             LIMIT 10`;
+        const resVideos = await db.query(queryVideos, [ searchStr, isAudioOnly ]);
 
-        const videos = resYoutube.rows;
+        const videos = resVideos.rows;
 
         data = {
             message:    {
@@ -313,36 +313,36 @@ export async function searchYoutubeVideo(body) {
 }
 
 /**
- * Получение информации о видео с Youtube
+ * Получение информации о медиа
  * @param { Object } body
  * @param { number } body.id
  * @returns { Promise<{ message: string | { video: { youtubeId: string, name: string | null, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number }}, statusCode: number }>}
  * */
-export async function getYoutubeVideo(body) {
+export async function getVideo(body) {
     let data = {
         message:    'error',
         statusCode: 400,
     };
 
-    const funcName = getYoutubeVideo.name;
+    const funcName = getVideo.name;
 
     try {
         const { id } = body;
 
-        const queryYoutube = `SELECT "youtubeId"     AS "youtubeId",
-                                     name            AS "name",
-                                     path            AS "path",
-                                     "isAudioOnly"   AS "isAudioOnly",
-                                     "thumbnailPath" AS "thumbnailPath",
-                                     duration        AS "duration"
-                              FROM youtube
-                              WHERE id = $1`;
-        const resYoutube = await db.query(queryYoutube, [ id ]);
+        const queryVideo = `SELECT "youtubeId"     AS "youtubeId",
+                                   name            AS "name",
+                                   path            AS "path",
+                                   "isAudioOnly"   AS "isAudioOnly",
+                                   "thumbnailPath" AS "thumbnailPath",
+                                   duration        AS "duration"
+                            FROM videos
+                            WHERE id = $1`;
+        const resVideo = await db.query(queryVideo, [ id ]);
 
-        if (resYoutube.rows.length > 0) {
+        if (resVideo.rows.length > 0) {
             data = {
                 message:    {
-                    video: resYoutube.rows[0],
+                    video: resVideo.rows[0],
                 },
                 statusCode: 200,
             };

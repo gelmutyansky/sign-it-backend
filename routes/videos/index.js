@@ -1,8 +1,8 @@
-import * as youtube from '../../handlers/youtube/handler.js';
+import * as videos from '../../handlers/videos/handler.js';
 
 export default async function(fastify, opts) {
     fastify.post(
-        '/add',
+        '/youtube/add',
         {
             schema: {
                 body:     {
@@ -42,7 +42,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await youtube.addYoutubeVideo(request.body);
+            const { statusCode, ...data } = await videos.addVideoFromYoutube(request.body);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
@@ -112,7 +112,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await youtube.searchYoutubeVideo(request.query);
+            const { statusCode, ...data } = await videos.searchVideo(request.query);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
@@ -175,7 +175,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await youtube.getYoutubeVideo(request.query);
+            const { statusCode, ...data } = await videos.getVideo(request.query);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
