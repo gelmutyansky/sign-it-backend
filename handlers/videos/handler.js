@@ -7,7 +7,15 @@ import { YtDlp } from 'ytdlp-nodejs';
 
 import { downloadImage } from '../../helpers/axios.js';
 
-const ytdlp = new YtDlp();
+const ytdlpOptions = {};
+if (process.env.YT_DLP_BINARY_PATH) {
+    ytdlpOptions.binaryPath = process.env.YT_DLP_BINARY_PATH;
+}
+if (process.env.YT_DLP_FFMPEG_PATH) {
+    ytdlpOptions.binaryPath = process.env.YT_DLP_FFMPEG_PATH;
+}
+
+const ytdlp = new YtDlp(ytdlpOptions);
 
 function getYoutubeUrl(youtubeId) {
     return `https://www.youtube.com/watch?v=${ youtubeId }`;
