@@ -47,7 +47,7 @@ export async function addSong(body) {
             };
         }
         else {
-            console.log(`${ funcName } Не добавлена песня (artist: ${ artist }, name: ${ name }, note: ${ note })`);
+            console.error(`${ funcName } Не добавлена песня (artist: ${ artist }, name: ${ name }, note: ${ note })`);
         }
     }
     catch (e) {
@@ -113,7 +113,7 @@ export async function editSong(body) {
             };
         }
         else {
-            console.log(`${ funcName } Не обновлена песня (id: ${ id },artist: ${ artist }, name: ${ name }, note: ${ note })`);
+            console.error(`${ funcName } Не обновлена песня (id: ${ id },artist: ${ artist }, name: ${ name }, note: ${ note })`);
         }
     }
     catch (e) {
