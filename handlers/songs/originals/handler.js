@@ -1,6 +1,6 @@
 import * as db from '../../../db/index.js';
 
-import * as fse from 'fs-extra';
+import fse from 'fs-extra/esm';
 import Vtt from 'vtt-creator';
 
 const publicFolder = './public/song_originals';

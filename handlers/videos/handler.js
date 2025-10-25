@@ -1,7 +1,7 @@
 import * as db from '../../db/index.js';
 
 import { extname } from 'path';
-import * as fse from 'fs-extra';
+import fse from 'fs-extra/esm';
 import getVideoId from 'get-video-id';
 import { YtDlp } from 'ytdlp-nodejs';
 
