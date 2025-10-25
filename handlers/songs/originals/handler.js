@@ -272,7 +272,7 @@ export async function setLyrics(body) {
             }
 
             if (previousEndTime) {
-                if (startTime <= previousEndTime) {
+                if (startTime < previousEndTime) {
                     console.error(`${ funcName } Начало куплета не может быть раньше окончания прошлого куплета (id: ${ id }, i: ${ i }, startTime: ${ startTime }, previousEndTime: ${ previousEndTime })`);
                     return data;
                 }
