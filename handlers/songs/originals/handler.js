@@ -21,27 +21,47 @@ export async function attachOriginal(body) {
     const funcName = attachOriginal.name;
     let client;
     let hasTransaction = false;
+    const filesToDelete = [];
 
     try {
         const { songId, videoId } = body;
 
-        const queryExistingOriginal = `SELECT id
+        const queryExistingOriginal = `SELECT id,
+                                              "videoId",
+                                              "lyricsBeforeSingPath",
+                                              "lyricsAfterSingPath"
                                        FROM song_originals
-                                       WHERE "songId" = $1
-                                         AND "videoId" = $2`;
-        const resExistingOriginal = await db.query(queryExistingOriginal, [ songId, videoId ]);
+                                       WHERE "songId" = $1`;
+        const resExistingOriginal = await db.query(queryExistingOriginal, [ songId ]);
 
         if (resExistingOriginal.rows.length > 0) {
-            const { id } = resExistingOriginal.rows[0];
+            const {
+                id,
+                videoId: previousVideoId,
+                lyricsBeforeSingPath,
+                lyricsAfterSingPath,
+            } = resExistingOriginal.rows[0];
 
-            data = {
-                message:    {
-                    id: id,
-                },
-                statusCode: 200,
-            };
+            if (previousVideoId === videoId) {
+                data = {
+                    message:    {
+                        id: id,
+                    },
+                    statusCode: 200,
+                };
 
-            return data;
+                return data;
+            }
+            else {
+                if (lyricsBeforeSingPath) {
+                    filesToDelete.push(lyricsBeforeSingPath);
+                }
+
+                if (lyricsAfterSingPath) {
+                    filesToDelete.push(lyricsAfterSingPath);
+                }
+            }
+
         }
 
         client = await db.getClient();
@@ -89,6 +109,16 @@ export async function attachOriginal(body) {
             }
 
             client.release();
+        }
+
+        if (data.statusCode === 200 && filesToDelete.length > 0) {
+            for (const filePath of filesToDelete) {
+                fse.remove(filePath, (err) => {
+                    if (err) {
+                        console.error(`${ funcName } Не получилось удалить файл (filePath: ${ filePath })`);
+                    }
+                });
+            }
         }
     }
 
