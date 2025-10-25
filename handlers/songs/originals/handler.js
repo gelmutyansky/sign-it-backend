@@ -90,3 +90,109 @@ export async function attachOriginal(body) {
     return data;
 }
 
+/**
+ * Установление меток времени
+ * @param { Object } body
+ * @param { number } body.id
+ * @param { number } body.startTime
+ * @param { number } body.switchTime
+ * @param { number } body.singTime
+ * @param { number } body.endTime
+ * @returns { Promise<{ message: string, statusCode: number }>}
+ * */
+export async function setTimes(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = setTimes.name;
+    let client;
+    let hasTransaction = false;
+
+    try {
+        const {
+            id,
+            startTime,
+            switchTime,
+            singTime,
+            endTime,
+        } = body;
+
+        const isTimeCorrect = startTime <= switchTime
+            && switchTime <= singTime
+            && singTime <= endTime;
+
+        if (!isTimeCorrect) {
+            console.error(`${ funcName } Нелогичные метки времени
+            startTime <= switchTime <= singTime <= endTime
+            ${ startTime } <= ${ switchTime } <= ${ singTime } <= ${ endTime }`);
+
+            data.message = 'illogical time';
+            return data;
+        }
+
+        const queryDuration = `SELECT duration
+                               FROM videos
+                                        INNER JOIN song_originals so on so."videoId" = videos."id"
+                               WHERE so.id = $1
+                                 AND duration IS NOT NULL`;
+        const resDuration = await db.query(queryDuration, [ id ]);
+
+        if (resDuration.rows.length <= 0) {
+            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (id: ${ id })`);
+            data.message = 'video not found'
+            return data;
+        }
+
+        const { duration } = resDuration.rows[0];
+        if (endTime > duration) {
+            console.error(`${ funcName } Длительность видео меньше, чем метка времени окончания (id: ${ id }, endTime: ${ endTime }, duration: ${ duration })`);
+
+            data.message = 'endTime > duration';
+            return data;
+        }
+
+        client = await db.getClient();
+
+        await client.query('BEGIN');
+        hasTransaction = true;
+
+        const queryUpdateTimes = `UPDATE song_originals
+                                  SET "startTime"  = $2,
+                                      "switchTime" = $3,
+                                      "singTime"   = $4,
+                                      "endTime"    = $5
+                                  WHERE id = $1`;
+        const resUpdateTimes = await client.query(queryUpdateTimes, [ id, startTime, switchTime, singTime, endTime ]);
+
+        if (resUpdateTimes.rowCount > 0) {
+            await client.query('COMMIT');
+            hasTransaction = false;
+
+            data = {
+                message:    'success',
+                statusCode: 200,
+            };
+        }
+        else {
+            console.error(`${ funcName } Метки времени в оригинале не обновлены (id: ${ id }, startTime: ${ startTime }, switchTime: ${ switchTime }, singTime: ${ singTime }, endTime: ${ endTime })`);
+        }
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+    finally {
+        if (client) {
+            if (hasTransaction) {
+                await client.query('ROLLBACK');
+            }
+
+            client.release();
+        }
+    }
+
+    return data;
+}

@@ -45,4 +45,64 @@ export default async function(fastify, opts) {
             return reply.send(data);
         },
     );
+
+    fastify.post(
+        '/times/set',
+        {
+            schema: {
+                body: {
+                    type:       'object',
+                    properties: {
+                        id:         {
+                            type: 'number',
+                        },
+                        startTime:  {
+                            type:    'number',
+                            minimum: 0,
+                        },
+                        switchTime: {
+                            type:    'number',
+                            minimum: 0,
+                        },
+                        singTime:   {
+                            type:    'number',
+                            minimum: 0,
+                        },
+                        endTime:    {
+                            type:    'number',
+                            minimum: 0,
+                        },
+                    },
+                    required:   [
+                        'id',
+                        'startTime',
+                        'switchTime',
+                        'singTime',
+                        'endTime',
+                    ],
+                },
+                response: {
+                    200: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                    400: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { statusCode, ...data } = await songOriginals.setTimes(request.body);
+            if (statusCode !== 200) {
+                reply.status(statusCode);
+            }
+            return reply.send(data);
+        },
+    );
 }
