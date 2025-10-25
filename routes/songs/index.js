@@ -8,8 +8,18 @@ export default async function(fastify, opts) {
                 body:     {
                     type:       'object',
                     properties: {
-                        artist: { type: 'string', minLength: 1 },
-                        name:   { type: 'string', minLength: 1 },
+                        artist: {
+                            type:      'string',
+                            minLength: 1,
+                        },
+                        name:   {
+                            type:      'string',
+                            minLength: 1,
+                        },
+                        note:   {
+                            type:     'string',
+                            nullable: true,
+                        },
                     },
                     required:   [
                         'artist',
