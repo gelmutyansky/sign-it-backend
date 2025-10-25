@@ -21,6 +21,8 @@ function getYoutubeUrl(youtubeId) {
     return `https://www.youtube.com/watch?v=${ youtubeId }`;
 }
 
+const publicFolder = './public/videos';
+
 /**
  * Добавление видео с Youtube
  * @param { Object } body
@@ -191,7 +193,7 @@ async function downloadVideoFromYoutube({ id }) {
 
         const { youtubeId, isAudioOnly } = resVideo.rows[0];
         const youtubeUrl = getYoutubeUrl(youtubeId);
-        const folder = `./public/${ youtubeId }`;
+        const folder = `${ publicFolder }/${ id }`;
         await fse.ensureDir(folder);
 
         let downloadOptions = {
@@ -306,7 +308,7 @@ async function updateVideoFromYoutube({ id }) {
 
         const { youtubeId } = resVideo.rows[0];
         const youtubeUrl = getYoutubeUrl(youtubeId);
-        const folder = `./public/${ youtubeId }`;
+        const folder = `${ publicFolder }/${ id }`;
         await fse.ensureDir(folder);
 
         const {
