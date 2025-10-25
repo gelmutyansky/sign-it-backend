@@ -162,28 +162,26 @@ export async function setTimes(body) {
             console.error(`${ funcName } Нелогичные метки времени
             startTime <= switchTime <= singTime <= endTime
             ${ startTime } <= ${ switchTime } <= ${ singTime } <= ${ endTime }`);
-
             data.message = 'illogical time';
             return data;
         }
 
-        const queryDuration = `SELECT duration
-                               FROM videos
-                                        INNER JOIN song_originals so on so."videoId" = videos."id"
-                               WHERE so.id = $1
-                                 AND duration IS NOT NULL`;
-        const resDuration = await db.query(queryDuration, [ id ]);
+        const queryVideo = `SELECT v.duration AS "duration"
+                            FROM videos v
+                                     INNER JOIN song_originals so on so."videoId" = v."id"
+                            WHERE so.id = $1
+                              AND v.duration IS NOT NULL`;
+        const resVideo = await db.query(queryVideo, [ id ]);
 
-        if (resDuration.rows.length <= 0) {
+        if (resVideo.rows.length <= 0) {
             console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (id: ${ id })`);
-            data.message = 'video not found'
+            data.message = 'video not found';
             return data;
         }
 
-        const { duration } = resDuration.rows[0];
+        const { duration } = resVideo.rows[0];
         if (endTime > duration) {
             console.error(`${ funcName } Длительность видео меньше, чем метка времени окончания (id: ${ id }, endTime: ${ endTime }, duration: ${ duration })`);
-
             data.message = 'endTime > duration';
             return data;
         }

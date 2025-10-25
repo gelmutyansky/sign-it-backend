@@ -50,7 +50,7 @@ export default async function(fastify, opts) {
         '/times/set',
         {
             schema: {
-                body: {
+                body:     {
                     type:       'object',
                     properties: {
                         id:         {
