@@ -30,6 +30,7 @@
     "get-video-id": "^4.1.7",
     "pg": "^8.16.3",
     "sinful-math": "^0.0.1",
+    "vtt-creator": "^1.1.1",
     "ytdlp-nodejs": "^2.3.5"
   },
   "devDependencies": {
