@@ -273,7 +273,8 @@ export async function fetchVideoFromYoutube({ id }) {
     try {
         const queryVideo = `SELECT "youtubeId"     AS "youtubeId",
                                    "thumbnailPath" AS "oldThumbnailPath",
-                                   "thumbnailUrl"  AS "oldThumbnailUrl"
+                                   "thumbnailUrl"  AS "oldThumbnailUrl",
+                                   "subtitlePath"  AS "oldSubtitlePath"
                             FROM videos
                             WHERE id = $1`;
         const resVideo = await db.query(queryVideo, [ id ]);
@@ -291,6 +292,7 @@ export async function fetchVideoFromYoutube({ id }) {
             youtubeId,
             oldThumbnailPath,
             oldThumbnailUrl,
+            oldSubtitlePath,
         } = resVideo.rows[0];
 
         if (!youtubeId) {
@@ -306,6 +308,7 @@ export async function fetchVideoFromYoutube({ id }) {
             thumbnail: thumbnailUrl,
             duration:  duration,
             fulltitle: title,
+            subtitles: subtitles,
         } = await ytDlp.getInfoAsync(youtubeUrl);
 
         let thumbnailPath = oldThumbnailPath;
@@ -313,6 +316,25 @@ export async function fetchVideoFromYoutube({ id }) {
         if (!thumbnailUrl || !oldThumbnailPath || oldThumbnailUrl !== thumbnailUrl) {
             thumbnailPath = `${ folder }/thumbnail${ extname(thumbnailUrl) }`;
             await download(thumbnailUrl, thumbnailPath);
+        }
+
+        let subtitlePath = oldSubtitlePath;
+
+        if (!oldSubtitlePath && subtitles) {
+            let subtitlesArray = [];
+
+            if ('ru' in subtitles) {
+                subtitlesArray = subtitles.ru;
+            }
+            else if ('en' in subtitles) {
+                subtitlesArray = subtitles.en;
+            }
+
+            if (subtitlesArray.length > 0) {
+                const { url } = subtitlesArray.find(subtitle => subtitle.ext === 'vtt');
+                subtitlePath = `${ folder }/subtitles.vtt`;
+                await download(url, subtitlePath);
+            }
         }
 
         client = await db.getClient();
@@ -324,12 +346,13 @@ export async function fetchVideoFromYoutube({ id }) {
                                   SET name            = $2,
                                       "thumbnailPath" = $3,
                                       duration        = $4,
-                                      "thumbnailUrl"  = $5
+                                      "thumbnailUrl"  = $5,
+                                      "subtitlePath"  = $6
                                   WHERE id = $1`;
-        const resUpdateVideo = await client.query(queryUpdateVideo, [ id, title, thumbnailPath, duration, thumbnailUrl ]);
+        const resUpdateVideo = await client.query(queryUpdateVideo, [ id, title, thumbnailPath, duration, thumbnailUrl, subtitlePath ]);
 
         if (resUpdateVideo.rowCount <= 0) {
-            console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration }, thumbnailUrl: ${ thumbnailUrl })`);
+            console.error(`${ funcName } Не обновлена таблица video (id: ${ id }, title: ${ title }, thumbnailPath: ${ thumbnailPath }, duration: ${ duration }, thumbnailUrl: ${ thumbnailUrl }, subtitlePath: ${ subtitlePath })`);
             return data;
         }
 
@@ -343,6 +366,10 @@ export async function fetchVideoFromYoutube({ id }) {
 
         if (oldThumbnailPath && oldThumbnailPath !== thumbnailPath) {
             pathsToDelete.push(oldThumbnailPath);
+        }
+
+        if (oldSubtitlePath && oldSubtitlePath !== subtitlePath) {
+            pathsToDelete.push(oldSubtitlePath);
         }
     }
     catch (e) {
