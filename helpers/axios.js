@@ -3,9 +3,10 @@ import { pipeline } from 'node:stream/promises';
 import axios from 'axios';
 
 /**
- * Скачивание по запросу
- * @param { string } url - ссылка на изображение
- * @param { string } path - куда сохранить изображение
+ * Скачивание по ссылке в указанный путь
+ * @param { string } url - ссылка для скачивания
+ * @param { string } path - куда сохранить файл
+ * @returns { Promise<void> }
  * */
 export async function download(url, path) {
     const response = await axios({
