@@ -166,23 +166,24 @@ export async function downloadVideoFromYoutube({ id }) {
         const youtubeUrl = getYoutubeUrl(youtubeId);
         const folder = await getFolder(id);
 
+        const timestamp = +new Date;
         let downloadOptions;
         let videoPath;
 
         if (isAudioOnly) {
             downloadOptions = {
-                output:       `${ folder }/audio.%(ext)s`,
+                output:       `${ folder }/audio${ timestamp }.%(ext)s`,
                 extractAudio: true,
                 audioFormat:  'm4a',
             };
-            videoPath = `${ folder }/audio.m4a`;
+            videoPath = `${ folder }/audio${ timestamp }.m4a`;
         }
         else {
             downloadOptions = {
-                output: `${ folder }/video.%(ext)s`,
+                output: `${ folder }/video${ timestamp }.%(ext)s`,
                 format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
             };
-            videoPath = `${ folder }/video.mp4`;
+            videoPath = `${ folder }/video-${ timestamp }.mp4`;
         }
 
         const output = await ytDlp.downloadAsync(
