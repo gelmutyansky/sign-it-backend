@@ -323,11 +323,14 @@ export async function fetchVideoFromYoutube({ id }) {
         if (!oldSubtitlePath && subtitles) {
             let subtitlesArray = [];
 
-            if ('ru' in subtitles) {
-                subtitlesArray = subtitles.ru;
-            }
-            else if ('en' in subtitles) {
-                subtitlesArray = subtitles.en;
+            for (const key in subtitles) {
+                if (key.startsWith('en') || key.startsWith('ru')) {
+                    subtitlesArray = subtitles[key];
+                    break;
+                }
+                else {
+                    console.log(`${ funcName } skip subtitle key ${ key }`);
+                }
             }
 
             if (subtitlesArray.length > 0) {
