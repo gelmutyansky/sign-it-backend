@@ -3,11 +3,11 @@ import { pipeline } from 'node:stream/promises';
 import axios from 'axios';
 
 /**
- * Скачивание изображения
+ * Скачивание по запросу
  * @param { string } url - ссылка на изображение
- * @param { string } imagePath - куда сохранить изображение
+ * @param { string } path - куда сохранить изображение
  * */
-export async function downloadImage(url, imagePath) {
+export async function download(url, path) {
     const response = await axios({
         method:       'GET',
         url:          url,
@@ -16,6 +16,6 @@ export async function downloadImage(url, imagePath) {
 
     return await pipeline(
         response.data,
-        fs.createWriteStream(imagePath),
+        fs.createWriteStream(path),
     );
 }

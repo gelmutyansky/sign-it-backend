@@ -5,7 +5,7 @@ import fse from 'fs-extra/esm';
 import getVideoId from 'get-video-id';
 import { YtDlp } from 'ytdlp-nodejs';
 
-import { downloadImage } from '../../../helpers/axios.js';
+import { download } from '../../../helpers/axios.js';
 import * as fsHelper from '../../../helpers/filesystem.js';
 
 async function getFolder(id) {
@@ -311,7 +311,7 @@ export async function fetchVideoFromYoutube({ id }) {
 
         if (!thumbnailUrl || !oldThumbnailPath || oldThumbnailUrl !== thumbnailUrl) {
             thumbnailPath = `${ folder }/thumbnail${ extname(thumbnailUrl) }`;
-            await downloadImage(thumbnailUrl, thumbnailPath);
+            await download(thumbnailUrl, thumbnailPath);
         }
 
         client = await db.getClient();
