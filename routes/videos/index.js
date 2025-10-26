@@ -56,6 +56,44 @@ export default async function(fastify, opts) {
         },
     );
 
+    fastify.post(
+        '/youtube/download',
+        {
+            schema: {
+                body:     {
+                    type:       'object',
+                    properties: {
+                        id: { type: 'number' },
+                    },
+                    required:   [
+                        'id',
+                    ],
+                },
+                response: {
+                    200: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                    400: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { statusCode, ...data } = await videos.downloadVideoFromYoutube(request.body);
+            if (statusCode !== 200) {
+                reply.status(statusCode);
+            }
+            return reply.send(data);
+        },
+    );
+
     fastify.get(
         '/search',
         {

@@ -6,6 +6,11 @@ import getVideoId from 'get-video-id';
 import { YtDlp } from 'ytdlp-nodejs';
 
 import { downloadImage } from '../../helpers/axios.js';
+import * as fsHelper from '../../helpers/filesystem.js';
+
+async function getFolder(id) {
+    return await fsHelper.getFolder('./public/videos', id);
+}
 
 const ytdlpOptions = {};
 if (process.env.YT_DLP_BINARY_PATH) {
@@ -171,7 +176,7 @@ export async function addVideoFromYoutube(body) {
  * @param { number } id - ID в таблице video
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function downloadVideoFromYoutube({ id }) {
+export async function downloadVideoFromYoutube({ id }) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -180,9 +185,12 @@ async function downloadVideoFromYoutube({ id }) {
     const funcName = downloadVideoFromYoutube.name;
     let client;
     let hasTransaction = false;
+    let pathToDelete;
 
     try {
-        const queryVideo = `SELECT "youtubeId", "isAudioOnly"
+        const queryVideo = `SELECT "youtubeId"   AS "youtubeId",
+                                   "isAudioOnly" AS "isAudioOnly",
+                                   path          AS "oldVideoPath"
                             FROM videos
                             WHERE id = $1`;
         const resVideo = await db.query(queryVideo, [ id ]);
@@ -191,16 +199,23 @@ async function downloadVideoFromYoutube({ id }) {
             console.error(`${ funcName } Запись в таблице video не найдена (id: ${ id })`);
         }
 
-        const { youtubeId, isAudioOnly } = resVideo.rows[0];
-        const youtubeUrl = getYoutubeUrl(youtubeId);
-        const folder = `${ publicFolder }/${ id }`;
-        await fse.ensureDir(folder);
+        const {
+            youtubeId,
+            isAudioOnly,
+            oldVideoPath,
+        } = resVideo.rows[0];
 
-        let downloadOptions = {
-            output: `${ folder }/video.%(ext)s`,
-            format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        };
-        let expectedVideoPath = `${ folder }/video.mp4`;
+        if (!youtubeId) {
+            console.error(`${ funcName } Нет youtubeId (id: ${ id }, youtubeId: ${ youtubeId })`);
+            data.message = 'no youtubeId';
+            return data;
+        }
+
+        const youtubeUrl = getYoutubeUrl(youtubeId);
+        const folder = await getFolder(id);
+
+        let downloadOptions;
+        let videoPath;
 
         if (isAudioOnly) {
             downloadOptions = {
@@ -208,7 +223,14 @@ async function downloadVideoFromYoutube({ id }) {
                 extractAudio: true,
                 audioFormat:  'm4a',
             };
-            expectedVideoPath = `${ folder }/audio.m4a`;
+            videoPath = `${ folder }/audio.m4a`;
+        }
+        else {
+            downloadOptions = {
+                output: `${ folder }/video.%(ext)s`,
+                format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            };
+            videoPath = `${ folder }/video.mp4`;
         }
 
         const output = await ytdlp.downloadAsync(
@@ -222,8 +244,6 @@ async function downloadVideoFromYoutube({ id }) {
         );
 
         console.log(output);
-
-        const videoPath = expectedVideoPath;
 
         client = await db.getClient();
 
@@ -247,6 +267,10 @@ async function downloadVideoFromYoutube({ id }) {
             message:    'success',
             statusCode: 200,
         };
+
+        if (oldVideoPath && oldVideoPath !== videoPath) {
+            pathToDelete = oldVideoPath;
+        }
     }
     catch (e) {
         console.error(`${ funcName }: ERROR`);
@@ -260,6 +284,17 @@ async function downloadVideoFromYoutube({ id }) {
             }
 
             client.release();
+        }
+
+        if (pathToDelete) {
+            fse.remove(pathToDelete, (err) => {
+                if (err) {
+                    console.error(`${ funcName } Файл не удалён из файловой системы (pathToDelete: ${ pathToDelete })`);
+                }
+                else {
+                    console.log(`${ funcName } Файл удалён из файловой системы (pathToDelete: ${ pathToDelete })`);
+                }
+            });
         }
     }
 
