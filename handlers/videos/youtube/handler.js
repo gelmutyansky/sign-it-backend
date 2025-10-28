@@ -1,15 +1,14 @@
 import * as db from '../../../db/index.js';
+import * as fs from '../../../fs/index.js';
+import { download } from '../../../helpers/axios.js';
 
 import { extname } from 'path';
-import fse from 'fs-extra/esm';
 import getVideoId from 'get-video-id';
 import { YtDlp } from 'ytdlp-nodejs';
 
-import { download } from '../../../helpers/axios.js';
-import * as fsHelper from '../../../helpers/filesystem.js';
-
 async function getFolder(id) {
-    return await fsHelper.getFolder('./public/videos', id);
+    const publicFolder = './public/videos'
+    return await fs.getFolder(publicFolder, id);
 }
 
 const ytdlpOptions = {};
@@ -240,14 +239,7 @@ export async function downloadVideoFromYoutube({ id }) {
         }
 
         if (pathToDelete) {
-            fse.remove(pathToDelete, (err) => {
-                if (err) {
-                    console.error(`${ funcName } Файл не удалён из файловой системы (pathToDelete: ${ pathToDelete })`);
-                }
-                else {
-                    console.log(`${ funcName } Файл удалён из файловой системы (pathToDelete: ${ pathToDelete })`);
-                }
-            });
+            fs.removeFile(pathToDelete, funcName);
         }
     }
 
@@ -391,14 +383,7 @@ export async function fetchVideoFromYoutube({ id }) {
 
         if (pathsToDelete.length > 0) {
             for (const pathToDelete of pathsToDelete) {
-                fse.remove(pathToDelete, (err) => {
-                    if (err) {
-                        console.error(`${ funcName } Файл не удалён из файловой системы (pathToDelete: ${ pathToDelete })`);
-                    }
-                    else {
-                        console.log(`${ funcName } Файл удалён из файловой системы (pathToDelete: ${ pathToDelete })`);
-                    }
-                });
+                fs.removeFile(pathToDelete, funcName);
             }
         }
     }

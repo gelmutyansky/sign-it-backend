@@ -1,9 +1,12 @@
 import * as db from '../../../db/index.js';
+import * as fs from '../../../fs/index.js';
 
-import fse from 'fs-extra/esm';
 import Vtt from 'vtt-creator';
 
-const publicFolder = './public/song_originals';
+async function getFolder(id) {
+    const publicFolder = './public/song_originals'
+    return await fs.getFolder(publicFolder, id);
+}
 
 /**
  * Прикрепление оригинального видео к песне
@@ -113,11 +116,7 @@ export async function attachOriginal(body) {
 
         if (data.statusCode === 200 && filesToDelete.length > 0) {
             for (const filePath of filesToDelete) {
-                fse.remove(filePath, (err) => {
-                    if (err) {
-                        console.error(`${ funcName } Не получилось удалить файл (filePath: ${ filePath })`);
-                    }
-                });
+                fs.removeFile(filePath, funcName);
             }
         }
     }
@@ -311,10 +310,12 @@ export async function setLyrics(body) {
             return data;
         }
 
-        const lyricsBeforeSingPath = `${ publicFolder }/${ id }/lyricsBeforeSing.vtt`;
-        await fse.outputFile(lyricsBeforeSingPath, lyricsBeforeSing);
-        const lyricsAfterSingPath = `${ publicFolder }/${ id }/lyricsAfterSing.vtt`;
-        await fse.outputFile(lyricsAfterSingPath, lyricsAfterSing);
+        const folder = await getFolder(id);
+
+        const lyricsBeforeSingPath = `${ folder }/lyricsBeforeSing.vtt`;
+        await fs.outputFile(lyricsBeforeSingPath, lyricsBeforeSing);
+        const lyricsAfterSingPath = `${ folder }/lyricsAfterSing.vtt`;
+        await fs.outputFile(lyricsAfterSingPath, lyricsAfterSing);
 
         client = await db.getClient();
 
