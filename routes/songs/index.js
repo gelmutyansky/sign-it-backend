@@ -8,17 +8,22 @@ export default async function(fastify, opts) {
                 body:     {
                     type:       'object',
                     properties: {
-                        artist: {
+                        artist:     {
                             type:      'string',
                             minLength: 1,
                         },
-                        name:   {
+                        name:       {
                             type:      'string',
                             minLength: 1,
                         },
-                        note:   {
+                        note:       {
                             type:     'string',
                             nullable: true,
+                        },
+                        difficulty: {
+                            type:       'number',
+                            minimum:    100,
+                            multipleOf: 100,
                         },
                     },
                     required:   [
@@ -63,20 +68,25 @@ export default async function(fastify, opts) {
                 body:     {
                     type:       'object',
                     properties: {
-                        id:     {
+                        id:         {
                             type: 'number',
                         },
-                        artist: {
+                        artist:     {
                             type:      'string',
                             minLength: 1,
                         },
-                        name:   {
+                        name:       {
                             type:      'string',
                             minLength: 1,
                         },
-                        note:   {
+                        note:       {
                             type:     'string',
                             nullable: true,
+                        },
+                        difficulty: {
+                            type:       'number',
+                            minimum:    100,
+                            multipleOf: 100,
                         },
                     },
                     required:   [
@@ -142,6 +152,9 @@ export default async function(fastify, opts) {
                                             note:         {
                                                 type:     'string',
                                                 nullable: true,
+                                            },
+                                            difficulty:   {
+                                                type: 'number',
                                             },
                                             original:     {
                                                 type:       'object',
