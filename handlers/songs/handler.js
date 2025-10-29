@@ -113,7 +113,7 @@ export async function editSong(body) {
             };
         }
         else {
-            console.error(`${ funcName } Не обновлена песня (id: ${ id },artist: ${ artist }, name: ${ name }, note: ${ note })`);
+            console.error(`${ funcName } Не обновлена песня (id: ${ id }, artist: ${ artist }, name: ${ name }, note: ${ note })`);
         }
     }
     catch (e) {

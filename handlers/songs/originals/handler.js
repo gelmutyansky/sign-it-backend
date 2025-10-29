@@ -4,7 +4,7 @@ import * as fs from '../../../fs/index.js';
 import Vtt from 'vtt-creator';
 
 async function getFolder(id) {
-    const publicFolder = './public/song_originals'
+    const publicFolder = './public/song_originals';
     return await fs.getFolder(publicFolder, id);
 }
 
@@ -64,7 +64,6 @@ export async function attachOriginal(body) {
                     filesToDelete.push(lyricsAfterSingPath);
                 }
             }
-
         }
 
         client = await db.getClient();
@@ -166,8 +165,8 @@ export async function setTimes(body) {
         }
 
         const queryVideo = `SELECT v.duration AS "duration"
-                            FROM videos v
-                                     INNER JOIN song_originals so on so."videoId" = v."id"
+                            FROM song_originals so
+                                     INNER JOIN videos v ON so."videoId" = v."id"
                             WHERE so.id = $1
                               AND v.duration IS NOT NULL`;
         const resVideo = await db.query(queryVideo, [ id ]);
