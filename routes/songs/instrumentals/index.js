@@ -47,6 +47,44 @@ export default async function(fastify, opts) {
     );
 
     fastify.post(
+        '/detach',
+        {
+            schema: {
+                body:     {
+                    type:       'object',
+                    properties: {
+                        songId: { type: 'number' },
+                    },
+                    required:   [
+                        'songId',
+                    ],
+                },
+                response: {
+                    200: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                    400: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { statusCode, ...data } = await songInstrumentals.detachInstrumental(request.body);
+            if (statusCode !== 200) {
+                reply.status(statusCode);
+            }
+            return reply.send(data);
+        },
+    );
+
+    fastify.post(
         '/times/set',
         {
             schema: {

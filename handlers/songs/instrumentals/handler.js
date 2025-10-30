@@ -88,6 +88,80 @@ export async function attachInstrumental(body) {
 }
 
 /**
+ * Открепление инструментальной версии видео от песни
+ * @param { Object } body
+ * @param { number } body.songId
+ * @returns { Promise<{ message: string, statusCode: number }>}
+ * */
+export async function detachInstrumental(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = detachInstrumental.name;
+    let client;
+    let hasTransaction = false;
+
+    try {
+        const { songId } = body;
+
+        const queryExistingInstrumental = `SELECT
+                                           FROM song_instrumentals
+                                           WHERE "songId" = $1`;
+        const resExistingInstrumental = await db.query(queryExistingInstrumental, [ songId ]);
+
+        if (resExistingInstrumental.rows.length <= 0) {
+            console.log(`${ funcName } Нет инструментальной версии для открепления (songId: ${ songId })`);
+            data = {
+                message:    'success',
+                statusCode: 200,
+            };
+            return data;
+        }
+
+        client = await db.getClient();
+
+        await client.query('BEGIN');
+        hasTransaction = true;
+
+        const queryDeleteInstrumental = `DELETE
+                                         FROM song_instrumentals
+                                         WHERE "songId" = $1`;
+        const resDeleteInstrumental = await client.query(queryDeleteInstrumental, [ songId ]);
+
+        if (resDeleteInstrumental.rowCount > 0 && resDeleteInstrumental.rows.length > 0) {
+            await client.query('COMMIT');
+            hasTransaction = false;
+
+            data = {
+                message:    'success',
+                statusCode: 200,
+            };
+        }
+        else {
+            console.error(`${ funcName } Не получилось удалить связь песни с инструментальной версией (songId: ${ songId })`);
+        }
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+    finally {
+        if (client) {
+            if (hasTransaction) {
+                await client.query('ROLLBACK');
+            }
+
+            client.release();
+        }
+    }
+
+    return data;
+}
+
+/**
  * Установление меток времени
  * @param { Object } body
  * @param { number } body.id

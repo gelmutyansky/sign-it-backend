@@ -124,6 +124,98 @@ export async function attachOriginal(body) {
 }
 
 /**
+ * Открепление оригинального видео от песни
+ * @param { Object } body
+ * @param { number } body.songId
+ * @returns { Promise<{ message: string, statusCode: number }>}
+ * */
+export async function detachOriginal(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = detachOriginal.name;
+    let client;
+    let hasTransaction = false;
+    const filesToDelete = [];
+
+    try {
+        const { songId } = body;
+
+        const queryExistingOriginal = `SELECT
+                                       FROM song_originals
+                                       WHERE "songId" = $1`;
+        const resExistingOriginal = await db.query(queryExistingOriginal, [ songId ]);
+
+        if (resExistingOriginal.rows.length <= 0) {
+            console.log(`${ funcName } Нет оригинала для открепления (songId: ${ songId })`);
+            data = {
+                message:    'success',
+                statusCode: 200,
+            };
+            return data;
+        }
+
+        client = await db.getClient();
+
+        await client.query('BEGIN');
+        hasTransaction = true;
+
+        const queryDeleteOriginal = `DELETE
+                                     FROM song_originals
+                                     WHERE "songId" = $1
+                                     RETURNING "lyricsBeforeSingPath", "lyricsAfterSingPath"`;
+        const resDeleteOriginal = await client.query(queryDeleteOriginal, [ songId ]);
+
+        if (resDeleteOriginal.rowCount > 0 && resDeleteOriginal.rows.length > 0) {
+            const { lyricsBeforeSingPath, lyricsAfterSingPath } = resDeleteOriginal.rows[0];
+
+            await client.query('COMMIT');
+            hasTransaction = false;
+
+            data = {
+                message:    'success',
+                statusCode: 200,
+            };
+
+            if (lyricsBeforeSingPath) {
+                filesToDelete.push(lyricsBeforeSingPath);
+            }
+
+            if (lyricsAfterSingPath) {
+                filesToDelete.push(lyricsAfterSingPath);
+            }
+        }
+        else {
+            console.error(`${ funcName } Не получилось удалить связь песни с оригиналом (songId: ${ songId })`);
+        }
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+    finally {
+        if (client) {
+            if (hasTransaction) {
+                await client.query('ROLLBACK');
+            }
+
+            client.release();
+        }
+
+        if (data.statusCode === 200 && filesToDelete.length > 0) {
+            for (const filePath of filesToDelete) {
+                fs.removeFile(filePath, funcName);
+            }
+        }
+    }
+
+    return data;
+}
+
+/**
  * Установление меток времени
  * @param { Object } body
  * @param { number } body.id
