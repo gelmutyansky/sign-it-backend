@@ -73,12 +73,14 @@ export async function attachOriginal(body) {
 
         const queryInsertOriginal = `INSERT INTO song_originals ("songId", "videoId")
                                      VALUES ($1, $2)
-                                     ON CONFLICT ("songId") DO UPDATE SET "videoId"    = $2,
-                                                                          "startTime"  = NULL,
-                                                                          "switchTime" = NULL,
-                                                                          "singTime"   = NULL,
-                                                                          "endTime"    = NULL,
-                                                                          lyrics       = NULL
+                                     ON CONFLICT ("songId") DO UPDATE SET "videoId"              = $2,
+                                                                          "startTime"            = NULL,
+                                                                          "switchTime"           = NULL,
+                                                                          "singTime"             = NULL,
+                                                                          "endTime"              = NULL,
+                                                                          lyrics                 = NULL,
+                                                                          "lyricsBeforeSingPath" = NULL,
+                                                                          "lyricsAfterSingPath"  = NULL
                                      RETURNING id`;
         const resInsertOriginal = await client.query(queryInsertOriginal, [ songId, videoId ]);
 
