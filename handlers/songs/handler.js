@@ -1,4 +1,9 @@
 import * as db from '../../db/index.js';
+import { sortableColumns } from '../../helpers/constants.js';
+
+import sinfulMath from 'sinful-math';
+
+const { sub: mSub, mul: mMul } = sinfulMath;
 
 /**
  * Добавление песни
@@ -245,6 +250,124 @@ export async function getSong(body) {
                 statusCode: 404,
             };
         }
+    }
+    catch (e) {
+        console.error(`${ funcName }: ERROR`);
+        console.error(e.message);
+        console.error(e.stack);
+    }
+
+    return data;
+}
+
+/**
+ * Список песен
+ * @param { Object } body
+ * @param { Object } body.pagination
+ * @param { string | null } body.pagination.sortBy
+ * @param { boolean } body.pagination.descending
+ * @param { number } body.pagination.page
+ * @param { number } body.id
+ * @param { string } body.artist
+ * @param { string } body.name
+ * @param { number? } body.difficulty
+ * @param { boolean? } body.hasOriginal
+ * @param { boolean? } body.hasOriginalTimes
+ * @param { boolean? } body.hasOriginalLyrics
+ * @param { boolean? } body.hasInstrumental
+ * @param { boolean? } body.hasInstrumentalTimes
+ * @returns { Promise<{ message: string | { songs: Array<{ id: number, artist: string, name: string, difficulty }> }, statusCode: number }>}
+ * */
+export async function getSongs(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = getSongs.name;
+
+    try {
+        const {
+            pagination,
+            id = null,
+            artist = null,
+            name = null,
+            note = null,
+            difficulty = null,
+            hasOriginal = null,
+            hasOriginalTimes = null,
+            hasOriginalLyrics = null,
+            hasInstrumental = null,
+            hasInstrumentalTimes = null,
+        } = body;
+
+        let sortBy = 'id';
+        let descending = true;
+
+        if (pagination.sortBy) {
+            if (sortableColumns.songs.includes(pagination.sortBy)) {
+                sortBy = pagination.sortBy;
+
+                if (!pagination.descending) {
+                    descending = false;
+                }
+            }
+            else {
+                console.log(`${ funcName } Недопустимое значение для сортировки таблицы, оставим сортировку по-умолчанию (pagination.sortBy: ${ pagination.sortBy })`);
+            }
+        }
+
+        const limit = 25;
+        const page = pagination.page;
+        const offset = mSub(mMul(page, limit), limit);
+
+        const querySongs = `SELECT s.id                                                     AS "id",
+                                   s.artist                                                 AS "artist",
+                                   s.name                                                   AS "name",
+                                   s.note                                                   AS "note",
+                                   s.difficulty                                             AS "difficulty",
+                                   so.id IS NOT NULL                                        AS "hasOriginal",
+                                   so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
+                                   so."singTime" IS NOT NULL AND so."endTime" IS NOT NULL   AS "hasOriginalTimes",
+                                   so.lyrics IS NOT NULL                                    AS "hasOriginalLyrics",
+                                   si.id IS NOT NULL                                        AS "hasInstrumental",
+                                   si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL AS "hasInstrumentalTimes"
+                            FROM songs s
+                                     LEFT JOIN song_originals so ON s.id = so."songId"
+                                     LEFT JOIN song_instrumentals si ON s.id = si."songId"
+                            WHERE ($1::integer IS NULL OR s.id = $1)
+                              AND ($2::text IS NULL OR LOWER(s."artist") LIKE $2)
+                              AND ($3::text IS NULL OR LOWER(s.name) LIKE $3)
+                              AND ($4::text IS NULL OR LOWER(s.name) LIKE $4)
+                              AND ($5::integer IS NULL OR s.difficulty = $5)
+                              AND ($6::boolean IS NULL OR so.id IS NOT NULL = $6)
+                              AND ($7::boolean IS NULL OR so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
+                                                          so."singTime" IS NOT NULL AND so."endTime" IS NOT NULL = $7)
+                              AND ($8::boolean IS NULL OR so.lyrics IS NOT NULL = $8)
+                              AND ($9::boolean IS NULL OR si.id IS NOT NULL = $9)
+                              AND ($10::boolean IS NULL OR
+                                   si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL = $10)
+                            ORDER BY "${ sortBy }" ${ descending ? 'DESC' : 'ASC' }
+                            LIMIT ${ limit } OFFSET ${ offset }`;
+        const resSongs = await db.query(querySongs, [
+            id,
+            artist,
+            name,
+            note,
+            difficulty,
+            hasOriginal,
+            hasOriginalTimes,
+            hasOriginalLyrics,
+            hasInstrumental,
+            hasInstrumentalTimes,
+        ]);
+
+        data = {
+            message:    {
+                songs: resSongs.rows,
+            },
+            statusCode: 200,
+        };
     }
     catch (e) {
         console.error(`${ funcName }: ERROR`);

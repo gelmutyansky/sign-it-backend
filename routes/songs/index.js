@@ -1,4 +1,5 @@
 import * as songs from '../../handlers/songs/handler.js';
+import { sortableColumns } from '../../helpers/constants.js';
 
 export default async function(fastify, opts) {
     fastify.post(
@@ -290,6 +291,158 @@ export default async function(fastify, opts) {
         },
         async (request, reply) => {
             const { statusCode, ...data } = await songs.getSong(request.query);
+            if (statusCode !== 200) {
+                reply.status(statusCode);
+            }
+            return reply.send(data);
+        },
+    );
+
+    fastify.post(
+        '/list',
+        {
+            schema: {
+                body:     {
+                    type:       'object',
+                    properties: {
+                        pagination:           {
+                            type:       'object',
+                            properties: {
+                                sortBy:     {
+                                    type:     'string',
+                                    enum:     sortableColumns.songs,
+                                    nullable: true,
+                                },
+                                descending: {
+                                    type: 'boolean',
+                                },
+                                page:       {
+                                    type: 'number',
+                                },
+                            },
+                            required:   [
+                                'sortBy',
+                                'descending',
+                                'page',
+                            ],
+                        },
+                        id:                   {
+                            type:     'number',
+                            nullable: true,
+                        },
+                        artist:               {
+                            type:     'string',
+                            nullable: true,
+                        },
+                        name:                 {
+                            type:     'string',
+                            nullable: true,
+                        },
+                        note:                 {
+                            type:     'string',
+                            nullable: true,
+                        },
+                        difficulty:           {
+                            type:     'number',
+                            nullable: true,
+                        },
+                        hasOriginal:          {
+                            type:     'boolean',
+                            nullable: true,
+                        },
+                        hasOriginalTimes:     {
+                            type:     'boolean',
+                            nullable: true,
+                        },
+                        hasOriginalLyrics:    {
+                            type:     'boolean',
+                            nullable: true,
+                        },
+                        hasInstrumental:      {
+                            type:     'boolean',
+                            nullable: true,
+                        },
+                        hasInstrumentalTimes: {
+                            type:     'boolean',
+                            nullable: true,
+                        },
+                    },
+                    required:   [
+                        'pagination',
+                        'id',
+                        'artist',
+                        'name',
+                        'note',
+                        'difficulty',
+                        'hasOriginal',
+                        'hasOriginalTimes',
+                        'hasOriginalLyrics',
+                        'hasInstrumental',
+                        'hasInstrumentalTimes',
+                    ],
+                },
+                response: {
+                    200: {
+                        type:       'object',
+                        properties: {
+                            message: {
+                                type:       'object',
+                                properties: {
+                                    songs: {
+                                        type:  'array',
+                                        items: {
+                                            type:       'object',
+                                            properties: {
+                                                id:                   {
+                                                    type:     'number',
+                                                },
+                                                artist:               {
+                                                    type:     'string',
+                                                },
+                                                name:                 {
+                                                    type:     'string',
+                                                },
+                                                note:                 {
+                                                    type:     'string',
+                                                    nullable: true,
+                                                },
+                                                difficulty:           {
+                                                    type:     'number',
+                                                    nullable: true,
+                                                },
+                                                hasOriginal:          {
+                                                    type: 'boolean',
+                                                },
+                                                hasOriginalTimes:     {
+                                                    type: 'boolean',
+                                                },
+                                                hasOriginalLyrics:    {
+                                                    type: 'boolean',
+                                                },
+                                                hasInstrumental:      {
+                                                    type: 'boolean',
+                                                },
+                                                hasInstrumentalTimes: {
+                                                    type: 'boolean',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { statusCode, ...data } = await songs.getSongs(request.body);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
