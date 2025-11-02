@@ -1,4 +1,5 @@
 import * as db from '../../db/index.js';
+import { errorHandler } from '../../helpers/functions.js';
 
 /**
  * Поиск видео
@@ -47,9 +48,7 @@ export async function searchVideo(body) {
         };
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
 
     return data;
@@ -98,9 +97,7 @@ export async function getVideo(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
 
     return data;

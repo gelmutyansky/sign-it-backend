@@ -1,5 +1,6 @@
 import * as db from '../../../db/index.js';
 import * as fs from '../../../fs/index.js';
+import { errorHandler } from '../../../helpers/functions.js';
 
 import Vtt from 'vtt-creator';
 
@@ -102,9 +103,7 @@ export async function attachOriginal(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -194,9 +193,7 @@ export async function detachOriginal(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -305,9 +302,7 @@ export async function setTimes(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -436,9 +431,7 @@ export async function setLyrics(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {

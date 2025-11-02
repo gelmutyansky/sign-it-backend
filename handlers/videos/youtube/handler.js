@@ -1,13 +1,13 @@
 import * as db from '../../../db/index.js';
 import * as fs from '../../../fs/index.js';
-import { download } from '../../../helpers/axios.js';
+import { download, errorHandler } from '../../../helpers/functions.js';
 
 import { extname } from 'path';
 import getVideoId from 'get-video-id';
 import { YtDlp } from 'ytdlp-nodejs';
 
 async function getFolder(id) {
-    const publicFolder = './public/videos'
+    const publicFolder = './public/videos';
     return await fs.getFolder(publicFolder, id);
 }
 
@@ -98,9 +98,7 @@ export async function addVideoFromYoutube(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -225,9 +223,7 @@ export async function downloadVideoFromYoutube({ id }) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -368,9 +364,7 @@ export async function fetchVideoFromYoutube({ id }) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {

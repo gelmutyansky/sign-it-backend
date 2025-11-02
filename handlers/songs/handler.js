@@ -1,5 +1,6 @@
 import * as db from '../../db/index.js';
 import { sortableColumns } from '../../helpers/constants.js';
+import { errorHandler } from '../../helpers/functions.js';
 
 import sinfulMath from 'sinful-math';
 
@@ -58,9 +59,7 @@ export async function addSong(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (hasTransaction) {
@@ -127,9 +126,7 @@ export async function editSong(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (hasTransaction) {
@@ -252,9 +249,7 @@ export async function getSong(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
 
     return data;
@@ -370,9 +365,7 @@ export async function getSongs(body) {
         };
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
 
     return data;

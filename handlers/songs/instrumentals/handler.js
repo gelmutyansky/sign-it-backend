@@ -1,4 +1,5 @@
 import * as db from '../../../db/index.js';
+import { errorHandler } from '../../../helpers/functions.js';
 
 /**
  * Прикрепление инструментальной версии видео к песне
@@ -72,9 +73,7 @@ export async function attachInstrumental(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -85,6 +84,8 @@ export async function attachInstrumental(body) {
             client.release();
         }
     }
+
+    return data;
 }
 
 /**
@@ -144,9 +145,7 @@ export async function detachInstrumental(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
@@ -241,9 +240,7 @@ export async function setTimes(body) {
         }
     }
     catch (e) {
-        console.error(`${ funcName }: ERROR`);
-        console.error(e.message);
-        console.error(e.stack);
+        data = errorHandler(e, funcName);
     }
     finally {
         if (client) {
