@@ -3,11 +3,5 @@ export const sortableColumns = {
         'id',
         'artist',
         'name',
-        'note',
-        'hasOriginal',
-        'hasOriginalTimes',
-        'hasOriginalLyrics',
-        'hasInstrumental',
-        'hasInstrumentalTimes',
     ],
 };
