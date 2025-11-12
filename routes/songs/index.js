@@ -308,15 +308,21 @@ export default async function(fastify, opts) {
                         pagination:           {
                             type:       'object',
                             properties: {
-                                sortBy:     {
-                                    type:     'string',
-                                    enum:     sortableColumns.songs,
-                                    nullable: true,
+                                sortBy:      {
+                                    type: 'string',
+                                    enum: sortableColumns.songs,
                                 },
-                                descending: {
+                                descending:  {
                                     type: 'boolean',
                                 },
-                                page:       {
+                                page:        {
+                                    type:    'number',
+                                    minimum: 1,
+                                },
+                                rowsPerPage: {
+                                    type: 'number',
+                                },
+                                rowsNumber:  {
                                     type: 'number',
                                 },
                             },
@@ -324,6 +330,8 @@ export default async function(fastify, opts) {
                                 'sortBy',
                                 'descending',
                                 'page',
+                                'rowsPerPage',
+                                'rowsNumber',
                             ],
                         },
                         id:                   {
@@ -394,13 +402,13 @@ export default async function(fastify, opts) {
                                             type:       'object',
                                             properties: {
                                                 id:                   {
-                                                    type:     'number',
+                                                    type: 'number',
                                                 },
                                                 artist:               {
-                                                    type:     'string',
+                                                    type: 'string',
                                                 },
                                                 name:                 {
-                                                    type:     'string',
+                                                    type: 'string',
                                                 },
                                                 note:                 {
                                                     type:     'string',

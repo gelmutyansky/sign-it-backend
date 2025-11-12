@@ -1,5 +1,4 @@
 import * as db from '../../db/index.js';
-import { sortableColumns } from '../../helpers/constants.js';
 import { errorHandler } from '../../helpers/functions.js';
 
 import sinfulMath from 'sinful-math';
@@ -296,25 +295,16 @@ export async function getSongs(body) {
             hasInstrumentalTimes = null,
         } = body;
 
-        let sortBy = 'id';
-        let descending = true;
+        const {
+            sortBy,
+            descending,
+            page,
+            rowsPerPage,
+            rowsNumber,
+        } = pagination;
 
-        if (pagination.sortBy) {
-            if (sortableColumns.songs.includes(pagination.sortBy)) {
-                sortBy = pagination.sortBy;
-
-                if (!pagination.descending) {
-                    descending = false;
-                }
-            }
-            else {
-                console.log(`${ funcName } Недопустимое значение для сортировки таблицы, оставим сортировку по-умолчанию (pagination.sortBy: ${ pagination.sortBy })`);
-            }
-        }
-
-        const limit = 25;
-        const page = pagination.page;
-        const offset = mSub(mMul(page, limit), limit);
+        const offset = mMul(mSub(page, 1), rowsPerPage);
+        const limit = rowsPerPage === 0 ? rowsNumber : rowsPerPage;
 
         const querySongs = `SELECT s.id                                                     AS "id",
                                    s.artist                                                 AS "artist",
@@ -326,7 +316,8 @@ export async function getSongs(body) {
                                    so."singTime" IS NOT NULL AND so."endTime" IS NOT NULL   AS "hasOriginalTimes",
                                    so.lyrics IS NOT NULL                                    AS "hasOriginalLyrics",
                                    si.id IS NOT NULL                                        AS "hasInstrumental",
-                                   si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL AS "hasInstrumentalTimes"
+                                   si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL AS "hasInstrumentalTimes",
+                                   COUNT(s.id) OVER ()                                      AS "rowsNumber"
                             FROM songs s
                                      LEFT JOIN song_originals so ON s.id = so."songId"
                                      LEFT JOIN song_instrumentals si ON s.id = si."songId"
