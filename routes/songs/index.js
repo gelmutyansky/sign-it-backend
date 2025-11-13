@@ -62,6 +62,62 @@ export default async function(fastify, opts) {
         },
     );
 
+    fastify.post(
+        '/add/spotify',
+        {
+            schema: {
+                body:     {
+                    type:  'array',
+                    items: {
+                        type:       'object',
+                        properties: {
+                            trackURI:   { type: 'string' },
+                            trackName:  { type: 'string' },
+                            artistName: { type: 'string' },
+                        },
+                        required:   [
+                            'trackURI',
+                            'trackName',
+                            'artistName',
+                        ],
+                    },
+                },
+                response: {
+                    200: {
+                        type:       'object',
+                        properties: {
+                            message: {
+                                type:       'object',
+                                properties: {
+                                    counters: {
+                                        type:       'object',
+                                        properties: {
+                                            inserted: { type: 'number' },
+                                            updated:  { type: 'number' },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    400: {
+                        type:       'object',
+                        properties: {
+                            message: { type: 'string' },
+                        },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { statusCode, ...data } = await songs.addSongsFromSpotify(request.body);
+            if (statusCode !== 200) {
+                reply.status(statusCode);
+            }
+            return reply.send(data);
+        },
+    );
+
     fastify.put(
         '/edit',
         {

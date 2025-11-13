@@ -3,7 +3,7 @@ import { errorHandler } from '../../helpers/functions.js';
 
 import sinfulMath from 'sinful-math';
 
-const { sub: mSub, mul: mMul } = sinfulMath;
+const { sub: mSub, mul: mMul, add: mAdd } = sinfulMath;
 
 /**
  * Добавление песни
@@ -358,6 +358,103 @@ export async function getSongs(body) {
     }
     catch (e) {
         data = errorHandler(e, funcName);
+    }
+
+    return data;
+}
+
+/**
+ * Добавление песен из плейлиста Spotify
+ * @param { Array<{ trackURI: string, trackName: string, artistName: string }> } body
+ * @returns { Promise<{ message: string | { counters: { inserted: number, updated: number } }, statusCode: number }>}
+ * */
+export async function addSongsFromSpotify(body) {
+    let data = {
+        message:    'error',
+        statusCode: 400,
+    };
+
+    const funcName = addSongsFromSpotify.name;
+    const client = await db.getClient();
+    let hasTransaction = false;
+
+    try {
+        await client.query('BEGIN');
+        hasTransaction = true;
+
+        const counters = {
+            inserted: 0,
+            updated:  0,
+        };
+
+        for (const song of body) {
+            const {
+                trackURI,
+                trackName,
+                artistName,
+            } = song;
+
+            const artist = artistName.split(';').join(', ');
+
+            const queryCheckExisting = `SELECT
+                                        FROM songs
+                                        WHERE LOWER(artist) = $1
+                                          AND LOWER(name) = $2
+                                            FOR UPDATE`;
+            const resCheckExisting = await client.query(queryCheckExisting, [ artist.toLowerCase(), trackName.toLowerCase() ]);
+
+            if (resCheckExisting.rows.length > 0) {
+                const queryUpdateSong = `UPDATE songs
+                                         SET "spotifyURI" = $3,
+                                             artist       = $4,
+                                             name         = $5,
+                                             "updateDate" = NOW()
+                                         WHERE LOWER(artist) = $1
+                                           AND LOWER(name) = $2`;
+                const resUpdateSong = await client.query(queryUpdateSong, [ artist.toLowerCase(), trackName.toLowerCase(), trackURI, artist, trackName ]);
+
+                if (resUpdateSong.rowCount > 0) {
+                    counters.updated = mAdd(counters.updated, resUpdateSong.rowCount);
+                }
+                else {
+                    console.error(`${funcName} Не обновлена песня (artist: ${ artist }, trackName: ${ trackName }, trackURI: ${ trackURI })`);
+                    return data;
+                }
+            }
+            else {
+                const queryInsertSong = `INSERT INTO songs (artist, name, "spotifyURI")
+                                         VALUES ($1, $2, $3)`;
+                const resInsertSong = await client.query(queryInsertSong, [ artist, trackName, trackURI ]);
+
+                if (resInsertSong.rowCount > 0) {
+                    counters.inserted = mAdd(counters.inserted, resInsertSong.rowCount);
+                }
+                else {
+                    console.error(`${ funcName } Не добавлена песня (artist: ${ artist }, trackName: ${ trackName }, trackURI: ${ trackURI })`);
+                    return data;
+                }
+            }
+
+            await client.query('COMMIT');
+            hasTransaction = false;
+
+            data = {
+                message:    {
+                    counters: counters,
+                },
+                statusCode: 200,
+            };
+        }
+    }
+    catch (e) {
+        data = errorHandler(e, funcName);
+    }
+    finally {
+        if (hasTransaction) {
+            await client.query('ROLLBACK');
+        }
+
+        client.release();
     }
 
     return data;
