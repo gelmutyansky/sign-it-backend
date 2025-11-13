@@ -489,6 +489,9 @@ export default async function(fastify, opts) {
                                                 hasInstrumentalTimes: {
                                                     type: 'boolean',
                                                 },
+                                                rowsNumber:           {
+                                                    type: 'number',
+                                                },
                                             },
                                         },
                                     },
