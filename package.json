@@ -24,7 +24,7 @@
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
     "fastify": "^5.0.0",
-    "fastify-cli": "^7.4.0",
+    "fastify-cli": "^7.4.1",
     "fastify-plugin": "^5.0.0",
     "fs-extra": "^11.3.2",
     "get-video-id": "^4.1.7",
