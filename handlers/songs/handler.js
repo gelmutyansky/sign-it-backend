@@ -104,10 +104,11 @@ export async function editSong(body) {
         hasTransaction = true;
 
         const queryUpdateSong = `UPDATE songs
-                                 SET artist     = $2,
-                                     name       = $3,
-                                     note       = $4,
-                                     difficulty = $5
+                                 SET artist       = $2,
+                                     name         = $3,
+                                     note         = $4,
+                                     difficulty   = $5,
+                                     "updateDate" = NOW()
                                  WHERE id = $1`;
         const resUpdateSong = await client.query(queryUpdateSong, [ id, artist, name, note, difficulty ]);
 
