@@ -8,7 +8,7 @@ import { errorHandler } from '../../helpers/functions.js';
  * @param { boolean? } body.isAudioOnly
  * @returns { Promise<{ message: string | { videos: Array<{ id: string, youtubeId: string, name: string | null, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number }>}, statusCode: number }> }
  * */
-export async function searchVideo(body) {
+async function searchVideo(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -60,7 +60,7 @@ export async function searchVideo(body) {
  * @param { number } body.id
  * @returns { Promise<{ message: string | { video: { youtubeId: string, name: string | null, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number }}, statusCode: number }>}
  * */
-export async function getVideo(body) {
+async function getVideo(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -102,3 +102,8 @@ export async function getVideo(body) {
 
     return data;
 }
+
+export {
+    searchVideo,
+    getVideo,
+};

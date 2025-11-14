@@ -8,7 +8,7 @@ import { errorHandler } from '../../../helpers/functions.js';
  * @param { number } body.videoId
  * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
  * */
-export async function attachInstrumental(body) {
+async function attachInstrumental(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -94,7 +94,7 @@ export async function attachInstrumental(body) {
  * @param { number } body.songId
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function detachInstrumental(body) {
+async function detachInstrumental(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -168,7 +168,7 @@ export async function detachInstrumental(body) {
  * @param { number } body.endTime
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function setTimes(body) {
+async function setTimes(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -254,3 +254,9 @@ export async function setTimes(body) {
 
     return data;
 }
+
+export {
+    attachInstrumental,
+    detachInstrumental,
+    setTimes,
+};

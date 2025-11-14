@@ -32,7 +32,7 @@ function getYoutubeUrl(youtubeId) {
  * @param { boolean } body.isAudioOnly
  * @returns { Promise<{ message: string | { id: number, isNew: boolean }, statusCode: number }> }
  * */
-export async function addVideoFromYoutube(body) {
+async function addVideoFromYoutube(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -125,7 +125,7 @@ export async function addVideoFromYoutube(body) {
  * @param { number } id - ID в таблице video
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function downloadVideoFromYoutube({ id }) {
+async function downloadVideoFromYoutube({ id }) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -247,7 +247,7 @@ export async function downloadVideoFromYoutube({ id }) {
  * @param { number } id - ID в таблице video
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function fetchVideoFromYoutube({ id }) {
+async function fetchVideoFromYoutube({ id }) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -384,3 +384,9 @@ export async function fetchVideoFromYoutube({ id }) {
 
     return data;
 }
+
+export {
+    addVideoFromYoutube,
+    downloadVideoFromYoutube,
+    fetchVideoFromYoutube,
+};

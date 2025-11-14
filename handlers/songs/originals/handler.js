@@ -16,7 +16,7 @@ async function getFolder(id) {
  * @param { number } body.videoId
  * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
  * */
-export async function attachOriginal(body) {
+async function attachOriginal(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -130,7 +130,7 @@ export async function attachOriginal(body) {
  * @param { number } body.songId
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function detachOriginal(body) {
+async function detachOriginal(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -224,7 +224,7 @@ export async function detachOriginal(body) {
  * @param { number } body.endTime
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function setTimes(body) {
+async function setTimes(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -324,7 +324,7 @@ export async function setTimes(body) {
  * @param { Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>} body.lyrics
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function setLyrics(body) {
+async function setLyrics(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -445,3 +445,10 @@ export async function setLyrics(body) {
 
     return data;
 }
+
+export {
+    attachOriginal,
+    detachOriginal,
+    setTimes,
+    setLyrics,
+};

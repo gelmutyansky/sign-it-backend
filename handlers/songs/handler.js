@@ -14,7 +14,7 @@ const { sub: mSub, mul: mMul, add: mAdd } = sinfulMath;
  * @param { number? } body.difficulty
  * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
  * */
-export async function addSong(body) {
+async function addSong(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -81,7 +81,7 @@ export async function addSong(body) {
  * @param { number? } body.difficulty
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-export async function editSong(body) {
+async function editSong(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -145,7 +145,7 @@ export async function editSong(body) {
  * @param { number } body.id
  * @returns { Promise<{ message: string | { artist: string, name: string, note: string | null, difficulty: number, original: { startTime: number | null, switchTime: number | null, singTime: number | null, endTime: number | null, lyrics: Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>, lyricsBeforeSingPath: string | null, lyricsAfterSingPath: string | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null }, instrumental: { switchTime: number | null, endTime: number | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null } }, statusCode: number }>}
  * */
-export async function getSong(body) {
+async function getSong(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -273,7 +273,7 @@ export async function getSong(body) {
  * @param { boolean? } body.hasInstrumentalTimes
  * @returns { Promise<{ message: string | { songs: Array<{ id: number, artist: string, name: string, difficulty }> }, statusCode: number }>}
  * */
-export async function getSongs(body) {
+async function getSongs(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -368,7 +368,7 @@ export async function getSongs(body) {
  * @param { Array<{ trackURI: string, trackName: string, artistName: string }> } body
  * @returns { Promise<{ message: string | { counters: { inserted: number, updated: number } }, statusCode: number }>}
  * */
-export async function addSongsFromSpotify(body) {
+async function addSongsFromSpotify(body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -417,7 +417,7 @@ export async function addSongsFromSpotify(body) {
                     counters.updated = mAdd(counters.updated, resUpdateSong.rowCount);
                 }
                 else {
-                    console.error(`${funcName} Не обновлена песня (artist: ${ artist }, trackName: ${ trackName }, trackURI: ${ trackURI })`);
+                    console.error(`${ funcName } Не обновлена песня (artist: ${ artist }, trackName: ${ trackName }, trackURI: ${ trackURI })`);
                     return data;
                 }
             }
@@ -459,3 +459,11 @@ export async function addSongsFromSpotify(body) {
 
     return data;
 }
+
+export {
+    addSong,
+    editSong,
+    getSong,
+    getSongs,
+    addSongsFromSpotify,
+};
