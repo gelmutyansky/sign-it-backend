@@ -1,14 +1,15 @@
-import * as db from '../../../db/index.js';
-import { errorHandler } from '../../../helpers/functions.js';
+import * as db from '../../../../db/index.js';
+import { errorHandler } from '../../../../helpers/functions.js';
 
 /**
  * Прикрепление инструментальной версии видео к песне
+ * @param { Object } params
+ * @param { number } params.id - ID из songs
  * @param { Object } body
- * @param { number } body.songId
- * @param { number } body.videoId
- * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
+ * @param { number } body.videoId - ID из videos
+ * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function attachInstrumental(body) {
+async function attachInstrumental(params, body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -19,7 +20,13 @@ async function attachInstrumental(body) {
     let hasTransaction = false;
 
     try {
-        const { songId, videoId } = body;
+        const {
+            id: songId,
+        } = params;
+
+        const {
+            videoId,
+        } = body;
 
         const queryExistingInstrumental = `SELECT id,
                                                   "videoId"
@@ -29,15 +36,12 @@ async function attachInstrumental(body) {
 
         if (resExistingInstrumental.rows.length > 0) {
             const {
-                id,
                 videoId: previousVideoId,
             } = resExistingInstrumental.rows[0];
 
             if (previousVideoId === videoId) {
                 data = {
-                    message:    {
-                        id: id,
-                    },
+                    message:    'already attached',
                     statusCode: 200,
                 };
 
@@ -51,20 +55,15 @@ async function attachInstrumental(body) {
         hasTransaction = true;
 
         const queryInsertInstrumental = `INSERT INTO song_instrumentals ("songId", "videoId")
-                                         VALUES ($1, $2)
-                                         RETURNING id`;
+                                         VALUES ($1, $2)`;
         const resInsertInstrumental = await client.query(queryInsertInstrumental, [ songId, videoId ]);
 
-        if (resInsertInstrumental.rowCount > 0 && resInsertInstrumental.rows.length > 0) {
-            const { id } = resInsertInstrumental.rows[0];
-
+        if (resInsertInstrumental.rowCount > 0) {
             await client.query('COMMIT');
             hasTransaction = false;
 
             data = {
-                message:    {
-                    id: id,
-                },
+                message:    'success',
                 statusCode: 200,
             };
         }
@@ -90,11 +89,11 @@ async function attachInstrumental(body) {
 
 /**
  * Открепление инструментальной версии видео от песни
- * @param { Object } body
- * @param { number } body.songId
+ * @param { Object } params
+ * @param { number } params.id - ID из songs
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function detachInstrumental(body) {
+async function detachInstrumental(params) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -105,7 +104,9 @@ async function detachInstrumental(body) {
     let hasTransaction = false;
 
     try {
-        const { songId } = body;
+        const {
+            id: songId,
+        } = params;
 
         const queryExistingInstrumental = `SELECT
                                            FROM song_instrumentals
@@ -131,7 +132,7 @@ async function detachInstrumental(body) {
                                          WHERE "songId" = $1`;
         const resDeleteInstrumental = await client.query(queryDeleteInstrumental, [ songId ]);
 
-        if (resDeleteInstrumental.rowCount > 0 && resDeleteInstrumental.rows.length > 0) {
+        if (resDeleteInstrumental.rowCount > 0) {
             await client.query('COMMIT');
             hasTransaction = false;
 
@@ -162,13 +163,14 @@ async function detachInstrumental(body) {
 
 /**
  * Установление меток времени
+ * @param { Object } params
+ * @param { number } params.id - ID из songs
  * @param { Object } body
- * @param { number } body.id
- * @param { number } body.switchTime
- * @param { number } body.endTime
+ * @param { number } body.switchTime - время начала инструментальной версии (при переходе с оригинала) (сек)
+ * @param { number } body.endTime - окончание инструментальной версии (сек)
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function setTimes(body) {
+async function setTimes(params, body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -180,7 +182,10 @@ async function setTimes(body) {
 
     try {
         const {
-            id,
+            id: songId,
+        } = params;
+
+        const {
             switchTime,
             endTime,
         } = body;
@@ -198,19 +203,19 @@ async function setTimes(body) {
         const queryVideo = `SELECT v.duration AS "duration"
                             FROM song_instrumentals si
                                      INNER JOIN videos v ON si."videoId" = v.id
-                            WHERE si.id = $1
+                            WHERE si."songId" = $1
                               AND v.duration IS NOT NULL`;
-        const resVideo = await db.query(queryVideo, [ id ]);
+        const resVideo = await db.query(queryVideo, [ songId ]);
 
         if (resVideo.rows.length <= 0) {
-            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (id: ${ id })`);
+            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (songId: ${ songId })`);
             data.message = 'video not found';
             return data;
         }
 
         const { duration } = resVideo.rows[0];
         if (endTime > duration) {
-            console.error(`${ funcName } Длительность видео меньше, чем метка времени окончания (id: ${ id }, endTime: ${ endTime }, duration: ${ duration })`);
+            console.error(`${ funcName } Длительность видео меньше, чем метка времени окончания (songId: ${ songId }, endTime: ${ endTime }, duration: ${ duration })`);
             data.message = 'endTime > duration';
             return data;
         }
@@ -223,8 +228,8 @@ async function setTimes(body) {
         const queryUpdateTimes = `UPDATE song_instrumentals
                                   SET "switchTime" = $2,
                                       "endTime"    = $3
-                                  WHERE id = $1`;
-        const resUpdateTimes = await client.query(queryUpdateTimes, [ id, switchTime, endTime ]);
+                                  WHERE "songId" = $1`;
+        const resUpdateTimes = await client.query(queryUpdateTimes, [ songId, switchTime, endTime ]);
 
         if (resUpdateTimes.rowCount > 0) {
             await client.query('COMMIT');
@@ -236,7 +241,7 @@ async function setTimes(body) {
             };
         }
         else {
-            console.error(`${ funcName } Метки времени в инструментальной версии не обновлены (id: ${ id }, switchTime: ${ switchTime }, endTime: ${ endTime })`);
+            console.error(`${ funcName } Метки времени в инструментальной версии не обновлены (songId: ${ songId }, switchTime: ${ switchTime }, endTime: ${ endTime })`);
         }
     }
     catch (e) {

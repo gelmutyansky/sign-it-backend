@@ -1,18 +1,25 @@
-import * as songOriginals from '../../../handlers/songs/originals/handler.js';
+import * as songOriginals from '../../../../handlers/songs/_id/originals/handler.js';
 
 export default async function(fastify, opts) {
     fastify.post(
         '/attach',
         {
             schema: {
+                params:   {
+                    type:       'object',
+                    properties: {
+                        id: { type: 'number' },
+                    },
+                    required:   [
+                        'id',
+                    ],
+                },
                 body:     {
                     type:       'object',
                     properties: {
-                        songId:  { type: 'number' },
                         videoId: { type: 'number' },
                     },
                     required:   [
-                        'songId',
                         'videoId',
                     ],
                 },
@@ -20,12 +27,7 @@ export default async function(fastify, opts) {
                     200: {
                         type:       'object',
                         properties: {
-                            message: {
-                                type:       'object',
-                                properties: {
-                                    id: { type: 'number' },
-                                },
-                            },
+                            message: { type: 'string' },
                         },
                     },
                     400: {
@@ -38,7 +40,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await songOriginals.attachOriginal(request.body);
+            const { statusCode, ...data } = await songOriginals.attachOriginal(request.params, request.body);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
@@ -50,13 +52,13 @@ export default async function(fastify, opts) {
         '/detach',
         {
             schema: {
-                body:     {
+                params:   {
                     type:       'object',
                     properties: {
-                        songId: { type: 'number' },
+                        id: { type: 'number' },
                     },
                     required:   [
-                        'songId',
+                        'id',
                     ],
                 },
                 response: {
@@ -76,7 +78,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await songOriginals.detachOriginal(request.body);
+            const { statusCode, ...data } = await songOriginals.detachOriginal(request.params);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
@@ -88,12 +90,18 @@ export default async function(fastify, opts) {
         '/times/set',
         {
             schema: {
+                params:   {
+                    type:       'object',
+                    properties: {
+                        id: { type: 'number' },
+                    },
+                    required:   [
+                        'id',
+                    ],
+                },
                 body:     {
                     type:       'object',
                     properties: {
-                        id:         {
-                            type: 'number',
-                        },
                         startTime:  {
                             type:    'number',
                             minimum: 0,
@@ -112,7 +120,6 @@ export default async function(fastify, opts) {
                         },
                     },
                     required:   [
-                        'id',
                         'startTime',
                         'switchTime',
                         'singTime',
@@ -136,7 +143,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await songOriginals.setTimes(request.body);
+            const { statusCode, ...data } = await songOriginals.setTimes(request.params, request.body);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
@@ -148,12 +155,18 @@ export default async function(fastify, opts) {
         '/lyrics/set',
         {
             schema: {
+                params:   {
+                    type:       'object',
+                    properties: {
+                        id: { type: 'number' },
+                    },
+                    required:   [
+                        'id',
+                    ],
+                },
                 body:     {
                     type:       'object',
                     properties: {
-                        id:     {
-                            type: 'number',
-                        },
                         lyrics: {
                             type:     'array',
                             items:    {
@@ -186,7 +199,6 @@ export default async function(fastify, opts) {
                         },
                     },
                     required:   [
-                        'id',
                         'lyrics',
                     ],
                 },
@@ -207,7 +219,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await songOriginals.setLyrics(request.body);
+            const { statusCode, ...data } = await songOriginals.setLyrics(request.params, request.body);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }

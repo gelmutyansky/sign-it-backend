@@ -1,6 +1,6 @@
-import * as db from '../../../db/index.js';
-import * as fs from '../../../fs/index.js';
-import { errorHandler } from '../../../helpers/functions.js';
+import * as db from '../../../../db/index.js';
+import * as fs from '../../../../fs/index.js';
+import { errorHandler } from '../../../../helpers/functions.js';
 
 import Vtt from 'vtt-creator';
 
@@ -11,12 +11,13 @@ async function getFolder(id) {
 
 /**
  * Прикрепление оригинального видео к песне
+ * @param { Object } params
+ * @param { number } params.id - ID из songs
  * @param { Object } body
- * @param { number } body.songId
- * @param { number } body.videoId
+ * @param { number } body.videoId - ID из videos
  * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
  * */
-async function attachOriginal(body) {
+async function attachOriginal(params, body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -28,7 +29,13 @@ async function attachOriginal(body) {
     const filesToDelete = [];
 
     try {
-        const { songId, videoId } = body;
+        const {
+            id: songId,
+        } = params;
+
+        const {
+            videoId,
+        } = body;
 
         const queryExistingOriginal = `SELECT id,
                                               "videoId",
@@ -126,11 +133,11 @@ async function attachOriginal(body) {
 
 /**
  * Открепление оригинального видео от песни
- * @param { Object } body
- * @param { number } body.songId
+ * @param { Object } params
+ * @param { number } params.id - ID из songs
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function detachOriginal(body) {
+async function detachOriginal(params) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -142,7 +149,9 @@ async function detachOriginal(body) {
     const filesToDelete = [];
 
     try {
-        const { songId } = body;
+        const {
+            id: songId,
+        } = params;
 
         const queryExistingOriginal = `SELECT
                                        FROM song_originals
@@ -216,15 +225,16 @@ async function detachOriginal(body) {
 
 /**
  * Установление меток времени
+ * @param { Object } params
+ * @param { number } params.id - ID из songs
  * @param { Object } body
- * @param { number } body.id
- * @param { number } body.startTime
- * @param { number } body.switchTime
- * @param { number } body.singTime
- * @param { number } body.endTime
+ * @param { number } body.startTime - время начала оригинала (сек)
+ * @param { number } body.switchTime - время переключения на инструментальную версию (сек)
+ * @param { number } body.singTime - время начала пения (сек)
+ * @param { number } body.endTime - время окончания оригининала
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function setTimes(body) {
+async function setTimes(params, body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -236,7 +246,10 @@ async function setTimes(body) {
 
     try {
         const {
-            id,
+            id: songId,
+        } = params;
+
+        const {
             startTime,
             switchTime,
             singTime,
@@ -258,19 +271,19 @@ async function setTimes(body) {
         const queryVideo = `SELECT v.duration AS "duration"
                             FROM song_originals so
                                      INNER JOIN videos v ON so."videoId" = v."id"
-                            WHERE so.id = $1
+                            WHERE so."songId" = $1
                               AND v.duration IS NOT NULL`;
-        const resVideo = await db.query(queryVideo, [ id ]);
+        const resVideo = await db.query(queryVideo, [ songId ]);
 
         if (resVideo.rows.length <= 0) {
-            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (id: ${ id })`);
+            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (songId: ${ songId })`);
             data.message = 'video not found';
             return data;
         }
 
         const { duration } = resVideo.rows[0];
         if (endTime > duration) {
-            console.error(`${ funcName } Длительность видео меньше, чем метка времени окончания (id: ${ id }, endTime: ${ endTime }, duration: ${ duration })`);
+            console.error(`${ funcName } Длительность видео меньше, чем метка времени окончания (songId: ${ songId }, endTime: ${ endTime }, duration: ${ duration })`);
             data.message = 'endTime > duration';
             return data;
         }
@@ -285,8 +298,8 @@ async function setTimes(body) {
                                       "switchTime" = $3,
                                       "singTime"   = $4,
                                       "endTime"    = $5
-                                  WHERE id = $1`;
-        const resUpdateTimes = await client.query(queryUpdateTimes, [ id, startTime, switchTime, singTime, endTime ]);
+                                  WHERE "songId" = $1`;
+        const resUpdateTimes = await client.query(queryUpdateTimes, [ songId, startTime, switchTime, singTime, endTime ]);
 
         if (resUpdateTimes.rowCount > 0) {
             await client.query('COMMIT');
@@ -298,7 +311,7 @@ async function setTimes(body) {
             };
         }
         else {
-            console.error(`${ funcName } Метки времени в оригинале не обновлены (id: ${ id }, startTime: ${ startTime }, switchTime: ${ switchTime }, singTime: ${ singTime }, endTime: ${ endTime })`);
+            console.error(`${ funcName } Метки времени в оригинале не обновлены (songId: ${ songId }, startTime: ${ startTime }, switchTime: ${ switchTime }, singTime: ${ singTime }, endTime: ${ endTime })`);
         }
     }
     catch (e) {
@@ -319,12 +332,13 @@ async function setTimes(body) {
 
 /**
  * Настройка текста песни
+ * @param { Object } params
+ * @param { number } params.id
  * @param { Object } body
- * @param { number } body.id
  * @param { Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>} body.lyrics
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
-async function setLyrics(body) {
+async function setLyrics(params, body) {
     let data = {
         message:    'error',
         statusCode: 400,
@@ -336,7 +350,10 @@ async function setLyrics(body) {
 
     try {
         const {
-            id,
+            id: songId,
+        } = params;
+
+        const {
             lyrics,
         } = body;
 
@@ -360,7 +377,7 @@ async function setLyrics(body) {
 
             if (previousEndTime) {
                 if (startTime < previousEndTime) {
-                    console.error(`${ funcName } Начало куплета не может быть раньше окончания прошлого куплета (id: ${ id }, i: ${ i }, startTime: ${ startTime }, previousEndTime: ${ previousEndTime })`);
+                    console.error(`${ funcName } Начало куплета не может быть раньше окончания прошлого куплета (songId: ${ songId }, i: ${ i }, startTime: ${ startTime }, previousEndTime: ${ previousEndTime })`);
                     return data;
                 }
             }
@@ -371,7 +388,7 @@ async function setLyrics(body) {
         }
 
         if (!hasMustSing) {
-            console.error(`${ funcName } Нет куплета для пения (id: ${ id }, hasMustSing: ${ hasMustSing })`);
+            console.error(`${ funcName } Нет куплета для пения (songId: ${ songId }, hasMustSing: ${ hasMustSing })`);
             data.message = 'no mustSing';
             return data;
         }
@@ -381,24 +398,24 @@ async function setLyrics(body) {
         const queryVideo = `SELECT v.duration AS "duration"
                             FROM song_originals so
                                      INNER JOIN videos v ON so."videoId" = v.id
-                            WHERE so.id = $1
+                            WHERE so."songId" = $1
                               AND v.duration IS NOT NULL`;
-        const resVideo = await db.query(queryVideo, [ id ]);
+        const resVideo = await db.query(queryVideo, [ songId ]);
 
         if (resVideo.rows.length <= 0) {
-            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (id: ${ id })`);
+            console.error(`${ funcName } Видео не найдено (возможно, не задана длительность) (songId: ${ songId })`);
             data.message = 'video not found';
             return data;
         }
 
         const { duration } = resVideo.rows[0];
         if (previousEndTime > duration) {
-            console.error(`${ funcName } Длительность видео меньше, чем окончание последнего куплета (id: ${ id }, previousEndTime: ${ previousEndTime }, duration: ${ duration })`);
+            console.error(`${ funcName } Длительность видео меньше, чем окончание последнего куплета (songId: ${ songId }, previousEndTime: ${ previousEndTime }, duration: ${ duration })`);
             data.message = 'previousEndTime > duration';
             return data;
         }
 
-        const folder = await getFolder(id);
+        const folder = await getFolder(songId);
 
         const lyricsBeforeSingPath = `${ folder }/lyricsBeforeSing.vtt`;
         await fs.outputFile(lyricsBeforeSingPath, lyricsBeforeSing);
@@ -414,8 +431,8 @@ async function setLyrics(body) {
                                    SET lyrics                 = $2,
                                        "lyricsBeforeSingPath" = $3,
                                        "lyricsAfterSingPath"  = $4
-                                   WHERE id = $1`;
-        const resUpdateLyrics = await client.query(queryUpdateLyrics, [ id, JSON.stringify(lyrics), lyricsBeforeSingPath, lyricsAfterSingPath ]);
+                                   WHERE "songId" = $1`;
+        const resUpdateLyrics = await client.query(queryUpdateLyrics, [ songId, JSON.stringify(lyrics), lyricsBeforeSingPath, lyricsAfterSingPath ]);
 
         if (resUpdateLyrics.rowCount > 0) {
             await client.query('COMMIT');
@@ -427,7 +444,7 @@ async function setLyrics(body) {
             };
         }
         else {
-            console.error(`${ funcName } Не обновлена лирика `);
+            console.error(`${ funcName } Не обновлена лирика (songId: ${ songId })`);
         }
     }
     catch (e) {
@@ -441,6 +458,8 @@ async function setLyrics(body) {
 
             client.release();
         }
+
+        // todo: delete files on not success
     }
 
     return data;
