@@ -119,15 +119,23 @@ export default async function(fastify, opts) {
     );
 
     fastify.put(
-        '/edit',
+        '/:id/edit',
         {
             schema: {
+                params:   {
+                    type:       'object',
+                    properties: {
+                        id: {
+                            type: 'number',
+                        },
+                    },
+                    required:   [
+                        'id',
+                    ],
+                },
                 body:     {
                     type:       'object',
                     properties: {
-                        id:         {
-                            type: 'number',
-                        },
                         artist:     {
                             type:      'string',
                             minLength: 1,
@@ -147,7 +155,6 @@ export default async function(fastify, opts) {
                         },
                     },
                     required:   [
-                        'id',
                         'artist',
                         'name',
                     ],
@@ -169,7 +176,8 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await songs.editSong(request.body);
+            const body = { ...request.body, ...request.params };
+            const { statusCode, ...data } = await songs.editSong(body);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
@@ -178,10 +186,10 @@ export default async function(fastify, opts) {
     );
 
     fastify.get(
-        '/get',
+        '/:id/get',
         {
             schema: {
-                query:    {
+                params:   {
                     type:       'object',
                     properties: {
                         id: { type: 'number' },
@@ -346,7 +354,7 @@ export default async function(fastify, opts) {
             },
         },
         async (request, reply) => {
-            const { statusCode, ...data } = await songs.getSong(request.query);
+            const { statusCode, ...data } = await songs.getSong(request.params);
             if (statusCode !== 200) {
                 reply.status(statusCode);
             }
