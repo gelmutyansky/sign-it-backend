@@ -134,7 +134,7 @@ async function downloadVideoFromYoutube({ id }) {
     const funcName = downloadVideoFromYoutube.name;
     let client;
     let hasTransaction = false;
-    let pathToDelete;
+    const filesToDelete = [];
 
     try {
         const queryVideo = `SELECT "youtubeId"   AS "youtubeId",
@@ -153,6 +153,8 @@ async function downloadVideoFromYoutube({ id }) {
             isAudioOnly,
             oldVideoPath,
         } = resVideo.rows[0];
+
+        fs.addToFilesToDelete(filesToDelete, [ oldVideoPath ], true);
 
         if (!youtubeId) {
             console.error(`${ funcName } Нет youtubeId (id: ${ id }, youtubeId: ${ youtubeId })`);
@@ -182,6 +184,8 @@ async function downloadVideoFromYoutube({ id }) {
             };
             videoPath = `${ folder }/video-${ timestamp }.mp4`;
         }
+
+        fs.addToFilesToDelete(filesToDelete, [ videoPath ], false);
 
         const output = await ytDlp.downloadAsync(
             youtubeUrl,
@@ -217,10 +221,6 @@ async function downloadVideoFromYoutube({ id }) {
             message:    'success',
             statusCode: 200,
         };
-
-        if (oldVideoPath && oldVideoPath !== videoPath) {
-            pathToDelete = oldVideoPath;
-        }
     }
     catch (e) {
         data = errorHandler(e, funcName);
@@ -234,9 +234,7 @@ async function downloadVideoFromYoutube({ id }) {
             client.release();
         }
 
-        if (pathToDelete) {
-            fs.removeFile(pathToDelete, funcName);
-        }
+        fs.removeFileOnSuccess(funcName, data.statusCode, filesToDelete);
     }
 
     return data;
@@ -256,7 +254,7 @@ async function fetchVideoFromYoutube({ id }) {
     const funcName = fetchVideoFromYoutube.name;
     let client;
     let hasTransaction = false;
-    let pathsToDelete = [];
+    const filesToDelete = [];
 
     try {
         const queryVideo = `SELECT "youtubeId"     AS "youtubeId",
@@ -289,6 +287,7 @@ async function fetchVideoFromYoutube({ id }) {
             return data;
         }
 
+        const timestamp = +new Date;
         const youtubeUrl = getYoutubeUrl(youtubeId);
         const folder = await getFolder(id);
 
@@ -301,9 +300,18 @@ async function fetchVideoFromYoutube({ id }) {
 
         let thumbnailPath = oldThumbnailPath;
 
-        if (!thumbnailUrl || !oldThumbnailPath || oldThumbnailUrl !== thumbnailUrl) {
-            thumbnailPath = `${ folder }/thumbnail${ extname(thumbnailUrl) }`;
-            await download(thumbnailUrl, thumbnailPath);
+        if (oldThumbnailUrl !== thumbnailUrl) {
+            if (thumbnailUrl) {
+                fs.addToFilesToDelete(filesToDelete, [ oldThumbnailPath ], true);
+
+                thumbnailPath = `${ folder }/thumbnail${ timestamp }${ extname(thumbnailUrl) }`;
+                await download(thumbnailUrl, thumbnailPath);
+
+                fs.addToFilesToDelete(filesToDelete, [ thumbnailPath ], false);
+            }
+            else {
+                // Нет ссылки на превью, оставляем старое значение
+            }
         }
 
         let subtitlePath = oldSubtitlePath;
@@ -323,8 +331,10 @@ async function fetchVideoFromYoutube({ id }) {
 
             if (subtitlesArray.length > 0) {
                 const { url } = subtitlesArray.find(subtitle => subtitle.ext === 'vtt');
-                subtitlePath = `${ folder }/subtitles.vtt`;
+                subtitlePath = `${ folder }/subtitles${ timestamp }.vtt`;
                 await download(url, subtitlePath);
+
+                fs.addToFilesToDelete(filesToDelete, [ subtitlePath ], false);
             }
         }
 
@@ -354,14 +364,6 @@ async function fetchVideoFromYoutube({ id }) {
             message:    'success',
             statusCode: 200,
         };
-
-        if (oldThumbnailPath && oldThumbnailPath !== thumbnailPath) {
-            pathsToDelete.push(oldThumbnailPath);
-        }
-
-        if (oldSubtitlePath && oldSubtitlePath !== subtitlePath) {
-            pathsToDelete.push(oldSubtitlePath);
-        }
     }
     catch (e) {
         data = errorHandler(e, funcName);
@@ -375,11 +377,7 @@ async function fetchVideoFromYoutube({ id }) {
             client.release();
         }
 
-        if (pathsToDelete.length > 0) {
-            for (const pathToDelete of pathsToDelete) {
-                fs.removeFile(pathToDelete, funcName);
-            }
-        }
+        fs.removeFileOnSuccess(funcName, data.statusCode, filesToDelete);
     }
 
     return data;

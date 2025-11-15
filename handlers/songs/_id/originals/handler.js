@@ -15,7 +15,7 @@ async function getFolder(id) {
  * @param { number } params.id - ID из songs
  * @param { Object } body
  * @param { number } body.videoId - ID из videos
- * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
+ * @returns { Promise<{ message: string, statusCode: number }>}
  * */
 async function attachOriginal(params, body) {
     let data = {
@@ -37,40 +37,30 @@ async function attachOriginal(params, body) {
             videoId,
         } = body;
 
-        const queryExistingOriginal = `SELECT id,
-                                              "videoId",
-                                              "lyricsBeforeSingPath",
-                                              "lyricsAfterSingPath"
+        const queryExistingOriginal = `SELECT "videoId"              AS "previousVideoId",
+                                              "lyricsBeforeSingPath" AS "oldLyricsBeforeSingPath",
+                                              "lyricsAfterSingPath"  AS "oldLyricsAfterSingPath"
                                        FROM song_originals
                                        WHERE "songId" = $1`;
         const resExistingOriginal = await db.query(queryExistingOriginal, [ songId ]);
 
         if (resExistingOriginal.rows.length > 0) {
             const {
-                id,
-                videoId: previousVideoId,
-                lyricsBeforeSingPath,
-                lyricsAfterSingPath,
+                previousVideoId,
+                oldLyricsBeforeSingPath,
+                oldLyricsAfterSingPath,
             } = resExistingOriginal.rows[0];
 
             if (previousVideoId === videoId) {
                 data = {
-                    message:    {
-                        id: id,
-                    },
+                    message:    'already attached',
                     statusCode: 200,
                 };
 
                 return data;
             }
             else {
-                if (lyricsBeforeSingPath) {
-                    filesToDelete.push(lyricsBeforeSingPath);
-                }
-
-                if (lyricsAfterSingPath) {
-                    filesToDelete.push(lyricsAfterSingPath);
-                }
+                fs.addToFilesToDelete(filesToDelete, [ oldLyricsBeforeSingPath, oldLyricsAfterSingPath ], true);
             }
         }
 
@@ -88,20 +78,15 @@ async function attachOriginal(params, body) {
                                                                           "endTime"              = NULL,
                                                                           lyrics                 = NULL,
                                                                           "lyricsBeforeSingPath" = NULL,
-                                                                          "lyricsAfterSingPath"  = NULL
-                                     RETURNING id`;
+                                                                          "lyricsAfterSingPath"  = NULL`;
         const resInsertOriginal = await client.query(queryInsertOriginal, [ songId, videoId ]);
 
         if (resInsertOriginal.rowCount > 0 && resInsertOriginal.rows.length > 0) {
-            const { id } = resInsertOriginal.rows[0];
-
             await client.query('COMMIT');
             hasTransaction = false;
 
             data = {
-                message:    {
-                    id: id,
-                },
+                message:    'success',
                 statusCode: 200,
             };
         }
@@ -121,11 +106,7 @@ async function attachOriginal(params, body) {
             client.release();
         }
 
-        if (data.statusCode === 200 && filesToDelete.length > 0) {
-            for (const filePath of filesToDelete) {
-                fs.removeFile(filePath, funcName);
-            }
-        }
+        fs.removeFileOnSuccess(funcName, data.statusCode, filesToDelete);
     }
 
     return data;
@@ -180,6 +161,7 @@ async function detachOriginal(params) {
 
         if (resDeleteOriginal.rowCount > 0 && resDeleteOriginal.rows.length > 0) {
             const { lyricsBeforeSingPath, lyricsAfterSingPath } = resDeleteOriginal.rows[0];
+            fs.addToFilesToDelete(filesToDelete, [ lyricsBeforeSingPath, lyricsAfterSingPath ], true);
 
             await client.query('COMMIT');
             hasTransaction = false;
@@ -188,14 +170,6 @@ async function detachOriginal(params) {
                 message:    'success',
                 statusCode: 200,
             };
-
-            if (lyricsBeforeSingPath) {
-                filesToDelete.push(lyricsBeforeSingPath);
-            }
-
-            if (lyricsAfterSingPath) {
-                filesToDelete.push(lyricsAfterSingPath);
-            }
         }
         else {
             console.error(`${ funcName } Не получилось удалить связь песни с оригиналом (songId: ${ songId })`);
@@ -213,11 +187,7 @@ async function detachOriginal(params) {
             client.release();
         }
 
-        if (data.statusCode === 200 && filesToDelete.length > 0) {
-            for (const filePath of filesToDelete) {
-                fs.removeFile(filePath, funcName);
-            }
-        }
+        fs.removeFileOnSuccess(funcName, data.statusCode, filesToDelete);
     }
 
     return data;
@@ -347,6 +317,7 @@ async function setLyrics(params, body) {
     const funcName = setLyrics.name;
     let client;
     let hasTransaction = false;
+    const filesToDelete = [];
 
     try {
         const {
@@ -395,7 +366,9 @@ async function setLyrics(params, body) {
 
         const lyricsAfterSing = vtt.toString();
 
-        const queryVideo = `SELECT v.duration AS "duration"
+        const queryVideo = `SELECT v.duration             AS "duration",
+                                   "lyricsBeforeSingPath" AS "oldLyricsBeforeSingPath",
+                                   "lyricsAfterSingPath"  AS "oldLyricsAfterSingPath"
                             FROM song_originals so
                                      INNER JOIN videos v ON so."videoId" = v.id
                             WHERE so."songId" = $1
@@ -408,7 +381,14 @@ async function setLyrics(params, body) {
             return data;
         }
 
-        const { duration } = resVideo.rows[0];
+        const {
+            duration,
+            oldLyricsBeforeSingPath,
+            oldLyricsAfterSingPath,
+        } = resVideo.rows[0];
+
+        fs.addToFilesToDelete(filesToDelete, [ oldLyricsBeforeSingPath, oldLyricsAfterSingPath ], true);
+
         if (previousEndTime > duration) {
             console.error(`${ funcName } Длительность видео меньше, чем окончание последнего куплета (songId: ${ songId }, previousEndTime: ${ previousEndTime }, duration: ${ duration })`);
             data.message = 'previousEndTime > duration';
@@ -417,10 +397,13 @@ async function setLyrics(params, body) {
 
         const folder = await getFolder(songId);
 
-        const lyricsBeforeSingPath = `${ folder }/lyricsBeforeSing.vtt`;
+        const timestamp = +new Date;
+
+        const lyricsBeforeSingPath = `${ folder }/lyricsBeforeSing${ timestamp }.vtt`;
+        const lyricsAfterSingPath = `${ folder }/lyricsAfterSing${ timestamp }.vtt`;
         await fs.outputFile(lyricsBeforeSingPath, lyricsBeforeSing);
-        const lyricsAfterSingPath = `${ folder }/lyricsAfterSing.vtt`;
         await fs.outputFile(lyricsAfterSingPath, lyricsAfterSing);
+        fs.addToFilesToDelete(filesToDelete, [ lyricsBeforeSingPath, lyricsAfterSingPath ], false);
 
         client = await db.getClient();
 
@@ -459,7 +442,7 @@ async function setLyrics(params, body) {
             client.release();
         }
 
-        // todo: delete files on not success
+        fs.removeFileOnSuccess(funcName, data.statusCode, filesToDelete);
     }
 
     return data;
