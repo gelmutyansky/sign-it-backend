@@ -114,16 +114,16 @@ async function getSongs(body) {
         } = pagination;
 
         const {
-            id = null,
-            artist = null,
-            name = null,
-            note = null,
-            difficulty = null,
-            hasOriginal = null,
-            hasOriginalTimes = null,
-            hasOriginalLyrics = null,
-            hasInstrumental = null,
-            hasInstrumentalTimes = null,
+            id,
+            artist,
+            name,
+            note,
+            difficulty,
+            hasOriginal,
+            hasOriginalTimes ,
+            hasOriginalLyrics,
+            hasInstrumental,
+            hasInstrumentalTimes,
         } = filters;
 
         const offset = mMul(mSub(page, 1), rowsPerPage);
@@ -145,9 +145,9 @@ async function getSongs(body) {
                                      LEFT JOIN song_originals so ON s.id = so."songId"
                                      LEFT JOIN song_instrumentals si ON s.id = si."songId"
                             WHERE ($1::integer IS NULL OR s.id = $1)
-                              AND ($2::text IS NULL OR LOWER(s."artist") LIKE '%' || LOWER($2) || '%')
-                              AND ($3::text IS NULL OR LOWER(s.name) LIKE '%' || LOWER($3) || '%')
-                              AND ($4::text IS NULL OR LOWER(s.note) LIKE '%' || LOWER($4) || '%')
+                              AND ($2::text IS NULL OR $2 = '' OR LOWER(s."artist") LIKE '%' || LOWER($2) || '%')
+                              AND ($3::text IS NULL OR $3 = '' OR LOWER(s.name) LIKE '%' || LOWER($3) || '%')
+                              AND ($4::text IS NULL OR $4 = '' OR LOWER(s.note) LIKE '%' || LOWER($4) || '%')
                               AND ($5::integer IS NULL OR s.difficulty = $5)
                               AND ($6::boolean IS NULL OR so.id IS NOT NULL = $6)
                               AND ($7::boolean IS NULL OR so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
