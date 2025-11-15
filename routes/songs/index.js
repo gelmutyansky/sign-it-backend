@@ -119,13 +119,13 @@ export default async function(fastify, opts) {
     );
 
     fastify.post(
-        '/list',
+        '/get',
         {
             schema: {
                 body:     {
                     type:       'object',
                     properties: {
-                        pagination:           {
+                        pagination: {
                             type:       'object',
                             properties: {
                                 sortBy:      {
@@ -154,59 +154,67 @@ export default async function(fastify, opts) {
                                 'rowsNumber',
                             ],
                         },
-                        id:                   {
-                            type:     'number',
-                            nullable: true,
-                        },
-                        artist:               {
-                            type:     'string',
-                            nullable: true,
-                        },
-                        name:                 {
-                            type:     'string',
-                            nullable: true,
-                        },
-                        note:                 {
-                            type:     'string',
-                            nullable: true,
-                        },
-                        difficulty:           {
-                            type:     'number',
-                            nullable: true,
-                        },
-                        hasOriginal:          {
-                            type:     'boolean',
-                            nullable: true,
-                        },
-                        hasOriginalTimes:     {
-                            type:     'boolean',
-                            nullable: true,
-                        },
-                        hasOriginalLyrics:    {
-                            type:     'boolean',
-                            nullable: true,
-                        },
-                        hasInstrumental:      {
-                            type:     'boolean',
-                            nullable: true,
-                        },
-                        hasInstrumentalTimes: {
-                            type:     'boolean',
-                            nullable: true,
+                        filters:    {
+                            type:       'object',
+                            properties: {
+                                id:                   {
+                                    type:     'number',
+                                    nullable: true,
+                                },
+                                artist:               {
+                                    type:     'string',
+                                    nullable: true,
+                                },
+                                name:                 {
+                                    type:     'string',
+                                    nullable: true,
+                                },
+                                note:                 {
+                                    type:     'string',
+                                    nullable: true,
+                                },
+                                difficulty:           {
+                                    type:     'number',
+                                    nullable: true,
+                                },
+                                hasOriginal:          {
+                                    type:     'boolean',
+                                    nullable: true,
+                                },
+                                hasOriginalTimes:     {
+                                    type:     'boolean',
+                                    nullable: true,
+                                },
+                                hasOriginalLyrics:    {
+                                    type:     'boolean',
+                                    nullable: true,
+                                },
+                                hasInstrumental:      {
+                                    type:     'boolean',
+                                    nullable: true,
+                                },
+                                hasInstrumentalTimes: {
+                                    type:     'boolean',
+                                    nullable: true,
+                                },
+                            },
+                            required:   [
+                                'id',
+                                'artist',
+                                'name',
+                                'note',
+                                'difficulty',
+                                'hasOriginal',
+                                'hasOriginalTimes',
+                                'hasOriginalLyrics',
+                                'hasInstrumental',
+                                'hasInstrumentalTimes',
+                            ],
                         },
                     },
                     required:   [
                         'pagination',
-                        'id',
-                        'artist',
-                        'name',
-                        'note',
-                        'difficulty',
-                        'hasOriginal',
-                        'hasOriginalTimes',
-                        'hasOriginalLyrics',
-                        'hasInstrumental',
-                        'hasInstrumentalTimes',
+                        'filters',
                     ],
                 },
                 response: {
@@ -235,8 +243,7 @@ export default async function(fastify, opts) {
                                                     nullable: true,
                                                 },
                                                 difficulty:           {
-                                                    type:     'number',
-                                                    nullable: true,
+                                                    type: 'number',
                                                 },
                                                 hasOriginal:          {
                                                     type: 'boolean',

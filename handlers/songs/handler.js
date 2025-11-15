@@ -78,16 +78,18 @@ async function addSong(body) {
  * @param { string | null } body.pagination.sortBy
  * @param { boolean } body.pagination.descending
  * @param { number } body.pagination.page
- * @param { number } body.id
- * @param { string } body.artist
- * @param { string } body.name
- * @param { number? } body.difficulty
- * @param { boolean? } body.hasOriginal
- * @param { boolean? } body.hasOriginalTimes
- * @param { boolean? } body.hasOriginalLyrics
- * @param { boolean? } body.hasInstrumental
- * @param { boolean? } body.hasInstrumentalTimes
- * @returns { Promise<{ message: string | { songs: Array<{ id: number, artist: string, name: string, difficulty }> }, statusCode: number }>}
+ * @param { Object } body.filters
+ * @param { number | null } body.filters.id
+ * @param { string | null } body.filters.artist
+ * @param { string | null } body.filters.name
+ * @param { string | null } body.filters.note
+ * @param { number | null } body.filters.difficulty
+ * @param { boolean | null } body.filters.hasOriginal
+ * @param { boolean | null } body.filters.hasOriginalTimes
+ * @param { boolean  | null} body.filters.hasOriginalLyrics
+ * @param { boolean | null } body.filters.hasInstrumental
+ * @param { boolean | null } body.filters.hasInstrumentalTimes
+ * @returns { Promise<{ message: string | { songs: Array<{ id: number, artist: string, name: string, note: string, difficulty: number, hasOriginal: boolean, hasOriginalTimes: boolean, hasOriginalLyrics: boolean, hasInstrumental: boolean, hasInstrumentalTimes: boolean, rowsNumber: number }> }, statusCode: number }>}
  * */
 async function getSongs(body) {
     let data = {
@@ -100,6 +102,18 @@ async function getSongs(body) {
     try {
         const {
             pagination,
+            filters,
+        } = body;
+
+        const {
+            sortBy,
+            descending,
+            page,
+            rowsPerPage,
+            rowsNumber,
+        } = pagination;
+
+        const {
             id = null,
             artist = null,
             name = null,
@@ -110,15 +124,7 @@ async function getSongs(body) {
             hasOriginalLyrics = null,
             hasInstrumental = null,
             hasInstrumentalTimes = null,
-        } = body;
-
-        const {
-            sortBy,
-            descending,
-            page,
-            rowsPerPage,
-            rowsNumber,
-        } = pagination;
+        } = filters;
 
         const offset = mMul(mSub(page, 1), rowsPerPage);
         const limit = rowsPerPage === 0 ? rowsNumber : rowsPerPage;
@@ -139,9 +145,9 @@ async function getSongs(body) {
                                      LEFT JOIN song_originals so ON s.id = so."songId"
                                      LEFT JOIN song_instrumentals si ON s.id = si."songId"
                             WHERE ($1::integer IS NULL OR s.id = $1)
-                              AND ($2::text IS NULL OR LOWER(s."artist") LIKE $2)
-                              AND ($3::text IS NULL OR LOWER(s.name) LIKE $3)
-                              AND ($4::text IS NULL OR LOWER(s.name) LIKE $4)
+                              AND ($2::text IS NULL OR LOWER(s."artist") LIKE '%' || LOWER($2) || '%')
+                              AND ($3::text IS NULL OR LOWER(s.name) LIKE '%' || LOWER($3) || '%')
+                              AND ($4::text IS NULL OR LOWER(s.note) LIKE '%' || LOWER($4) || '%')
                               AND ($5::integer IS NULL OR s.difficulty = $5)
                               AND ($6::boolean IS NULL OR so.id IS NOT NULL = $6)
                               AND ($7::boolean IS NULL OR so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
