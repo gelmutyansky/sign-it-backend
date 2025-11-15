@@ -27,19 +27,17 @@ export default async function(fastify, opts) {
                             type:      'string',
                             minLength: 1,
                         },
-                        note:       {
-                            type:     'string',
-                            nullable: true,
-                        },
                         difficulty: {
                             type:       'number',
                             minimum:    100,
                             multipleOf: 100,
+                            nullable:   true,
                         },
                     },
                     required:   [
                         'artist',
                         'name',
+                        'difficulty',
                     ],
                 },
                 response: {
@@ -96,12 +94,9 @@ export default async function(fastify, opts) {
                                             name:         {
                                                 type: 'string',
                                             },
-                                            note:         {
-                                                type:     'string',
-                                                nullable: true,
-                                            },
                                             difficulty:   {
-                                                type: 'number',
+                                                type:     'number',
+                                                nullable: true,
                                             },
                                             original:     {
                                                 type:       'object',

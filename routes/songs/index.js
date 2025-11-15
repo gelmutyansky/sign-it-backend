@@ -9,22 +9,13 @@ export default async function(fastify, opts) {
                 body:     {
                     type:       'object',
                     properties: {
-                        artist:     {
+                        artist: {
                             type:      'string',
                             minLength: 1,
                         },
-                        name:       {
+                        name:   {
                             type:      'string',
                             minLength: 1,
-                        },
-                        note:       {
-                            type:     'string',
-                            nullable: true,
-                        },
-                        difficulty: {
-                            type:       'number',
-                            minimum:    100,
-                            multipleOf: 100,
                         },
                     },
                     required:   [
@@ -169,13 +160,11 @@ export default async function(fastify, opts) {
                                     type:     'string',
                                     nullable: true,
                                 },
-                                note:                 {
-                                    type:     'string',
-                                    nullable: true,
-                                },
                                 difficulty:           {
-                                    type:     'number',
-                                    nullable: true,
+                                    type:       'number',
+                                    minimum:    100,
+                                    multipleOf: 100,
+                                    nullable:   true,
                                 },
                                 hasOriginal:          {
                                     type:     'boolean',
@@ -202,7 +191,6 @@ export default async function(fastify, opts) {
                                 'id',
                                 'artist',
                                 'name',
-                                'note',
                                 'difficulty',
                                 'hasOriginal',
                                 'hasOriginalTimes',
@@ -238,12 +226,9 @@ export default async function(fastify, opts) {
                                                 name:                 {
                                                     type: 'string',
                                                 },
-                                                note:                 {
-                                                    type:     'string',
-                                                    nullable: true,
-                                                },
                                                 difficulty:           {
-                                                    type: 'number',
+                                                    type:     'number',
+                                                    nullable: true,
                                                 },
                                                 hasOriginal:          {
                                                     type: 'boolean',

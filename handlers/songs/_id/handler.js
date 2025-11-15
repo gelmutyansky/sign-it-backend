@@ -9,7 +9,6 @@ import { errorHandler } from '../../../helpers/functions.js';
  * @param { number } body.id
  * @param { string } body.artist
  * @param { string } body.name
- * @param { string | null } body.note
  * @param { number? } body.difficulty
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
@@ -31,8 +30,7 @@ async function editSong(params, body) {
         const {
             artist,
             name,
-            note,
-            difficulty = 100,
+            difficulty,
         } = body;
 
         await client.query('BEGIN');
@@ -41,11 +39,10 @@ async function editSong(params, body) {
         const queryUpdateSong = `UPDATE songs
                                  SET artist       = $2,
                                      name         = $3,
-                                     note         = $4,
-                                     difficulty   = $5,
+                                     difficulty   = $4,
                                      "updateDate" = NOW()
                                  WHERE id = $1`;
-        const resUpdateSong = await client.query(queryUpdateSong, [ id, artist, name, note, difficulty ]);
+        const resUpdateSong = await client.query(queryUpdateSong, [ id, artist, name, difficulty ]);
 
         if (resUpdateSong.rowCount > 0) {
             await client.query('COMMIT');
@@ -57,7 +54,7 @@ async function editSong(params, body) {
             };
         }
         else {
-            console.error(`${ funcName } Не обновлена песня (id: ${ id }, artist: ${ artist }, name: ${ name }, note: ${ note }, difficulty: ${ difficulty })`);
+            console.error(`${ funcName } Не обновлена песня (id: ${ id }, artist: ${ artist }, name: ${ name }, difficulty: ${ difficulty })`);
         }
     }
     catch (e) {
@@ -78,7 +75,7 @@ async function editSong(params, body) {
  * Получение информации о песне
  * @param { Object } params
  * @param { number } params.id
- * @returns { Promise<{ message: string | { artist: string, name: string, note: string | null, difficulty: number, original: { startTime: number | null, switchTime: number | null, singTime: number | null, endTime: number | null, lyrics: Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>, lyricsBeforeSingPath: string | null, lyricsAfterSingPath: string | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null }, instrumental: { switchTime: number | null, endTime: number | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null } }, statusCode: number }>}
+ * @returns { Promise<{ message: string | { artist: string, name: string, difficulty: number | null, original: { startTime: number | null, switchTime: number | null, singTime: number | null, endTime: number | null, lyrics: Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>, lyricsBeforeSingPath: string | null, lyricsAfterSingPath: string | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null }, instrumental: { switchTime: number | null, endTime: number | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null } }, statusCode: number }>}
  * */
 async function getSong(params) {
     let data = {
@@ -95,7 +92,6 @@ async function getSong(params) {
 
         const querySong = `SELECT s.artist          AS "artist",
                                   s.name            AS "name",
-                                  s.note            AS "note",
                                   s.difficulty      AS "difficulty",
                                   so.id IS NOT NULL AS "hasOriginal",
                                   si.id IS NOT NULL AS "hasInstrumental"
@@ -193,4 +189,4 @@ async function getSong(params) {
 export {
     editSong,
     getSong,
-}
+};

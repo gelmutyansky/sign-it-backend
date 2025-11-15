@@ -10,8 +10,6 @@ const { sub: mSub, mul: mMul, add: mAdd } = sinfulMath;
  * @param { Object } body
  * @param { string } body.artist
  * @param { string } body.name
- * @param { string | null } body.note
- * @param { number? } body.difficulty
  * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
  * */
 async function addSong(body) {
@@ -28,17 +26,15 @@ async function addSong(body) {
         const {
             artist,
             name,
-            note,
-            difficulty = 100,
         } = body;
 
         await client.query('BEGIN');
         hasTransaction = true;
 
-        const queryInsertSong = `INSERT INTO songs (artist, name, note, difficulty)
-                                 VALUES ($1, $2, $3, $4)
+        const queryInsertSong = `INSERT INTO songs (artist, name)
+                                 VALUES ($1, $2)
                                  RETURNING id`;
-        const resInsertSong = await client.query(queryInsertSong, [ artist, name, note, difficulty ]);
+        const resInsertSong = await client.query(queryInsertSong, [ artist, name ]);
 
         if (resInsertSong.rowCount > 0 && resInsertSong.rows.length > 0) {
             const { id } = resInsertSong.rows[0];
@@ -54,7 +50,7 @@ async function addSong(body) {
             };
         }
         else {
-            console.error(`${ funcName } Не добавлена песня (artist: ${ artist }, name: ${ name }, note: ${ note }, difficulty: ${ difficulty })`);
+            console.error(`${ funcName } Не добавлена песня (artist: ${ artist }, name: ${ name })`);
         }
     }
     catch (e) {
@@ -82,14 +78,13 @@ async function addSong(body) {
  * @param { number | null } body.filters.id
  * @param { string | null } body.filters.artist
  * @param { string | null } body.filters.name
- * @param { string | null } body.filters.note
  * @param { number | null } body.filters.difficulty
  * @param { boolean | null } body.filters.hasOriginal
  * @param { boolean | null } body.filters.hasOriginalTimes
  * @param { boolean  | null} body.filters.hasOriginalLyrics
  * @param { boolean | null } body.filters.hasInstrumental
  * @param { boolean | null } body.filters.hasInstrumentalTimes
- * @returns { Promise<{ message: string | { songs: Array<{ id: number, artist: string, name: string, note: string, difficulty: number, hasOriginal: boolean, hasOriginalTimes: boolean, hasOriginalLyrics: boolean, hasInstrumental: boolean, hasInstrumentalTimes: boolean, rowsNumber: number }> }, statusCode: number }>}
+ * @returns { Promise<{ message: string | { songs: Array<{ id: number, artist: string, name: string, difficulty: number | null, hasOriginal: boolean, hasOriginalTimes: boolean, hasOriginalLyrics: boolean, hasInstrumental: boolean, hasInstrumentalTimes: boolean, rowsNumber: number }> }, statusCode: number }>}
  * */
 async function getSongs(body) {
     let data = {
@@ -117,10 +112,9 @@ async function getSongs(body) {
             id,
             artist,
             name,
-            note,
             difficulty,
             hasOriginal,
-            hasOriginalTimes ,
+            hasOriginalTimes,
             hasOriginalLyrics,
             hasInstrumental,
             hasInstrumentalTimes,
@@ -132,7 +126,6 @@ async function getSongs(body) {
         const querySongs = `SELECT s.id                                                     AS "id",
                                    s.artist                                                 AS "artist",
                                    s.name                                                   AS "name",
-                                   s.note                                                   AS "note",
                                    s.difficulty                                             AS "difficulty",
                                    so.id IS NOT NULL                                        AS "hasOriginal",
                                    so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
@@ -147,22 +140,20 @@ async function getSongs(body) {
                             WHERE ($1::integer IS NULL OR s.id = $1)
                               AND ($2::text IS NULL OR $2 = '' OR LOWER(s."artist") LIKE '%' || LOWER($2) || '%')
                               AND ($3::text IS NULL OR $3 = '' OR LOWER(s.name) LIKE '%' || LOWER($3) || '%')
-                              AND ($4::text IS NULL OR $4 = '' OR LOWER(s.note) LIKE '%' || LOWER($4) || '%')
-                              AND ($5::integer IS NULL OR s.difficulty = $5)
-                              AND ($6::boolean IS NULL OR so.id IS NOT NULL = $6)
-                              AND ($7::boolean IS NULL OR so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
-                                                          so."singTime" IS NOT NULL AND so."endTime" IS NOT NULL = $7)
-                              AND ($8::boolean IS NULL OR so.lyrics IS NOT NULL = $8)
-                              AND ($9::boolean IS NULL OR si.id IS NOT NULL = $9)
-                              AND ($10::boolean IS NULL OR
-                                   si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL = $10)
+                              AND ($4::integer IS NULL OR s.difficulty = $4)
+                              AND ($5::boolean IS NULL OR so.id IS NOT NULL = $5)
+                              AND ($6::boolean IS NULL OR so."startTime" IS NOT NULL AND so."switchTime" IS NOT NULL AND
+                                                          so."singTime" IS NOT NULL AND so."endTime" IS NOT NULL = $6)
+                              AND ($7::boolean IS NULL OR so.lyrics IS NOT NULL = $7)
+                              AND ($8::boolean IS NULL OR si.id IS NOT NULL = $8)
+                              AND ($9::boolean IS NULL OR
+                                   si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL = $9)
                             ORDER BY "${ sortBy }" ${ descending ? 'DESC' : 'ASC' }
                             LIMIT ${ limit } OFFSET ${ offset }`;
         const resSongs = await db.query(querySongs, [
             id,
             artist,
             name,
-            note,
             difficulty,
             hasOriginal,
             hasOriginalTimes,
