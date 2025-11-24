@@ -10,7 +10,7 @@ const { sub: mSub, mul: mMul, add: mAdd } = sinfulMath;
  * @param { Object } body
  * @param { string } body.artist
  * @param { string } body.name
- * @returns { Promise<{ message: string | { id: number }, statusCode: number }>}
+ * @returns { Promise<{ message: string, statusCode: number }>}
  * */
 async function addSong(body) {
     let data = {
@@ -32,20 +32,15 @@ async function addSong(body) {
         hasTransaction = true;
 
         const queryInsertSong = `INSERT INTO songs (artist, name)
-                                 VALUES ($1, $2)
-                                 RETURNING id`;
+                                 VALUES ($1, $2)`;
         const resInsertSong = await client.query(queryInsertSong, [ artist, name ]);
 
-        if (resInsertSong.rowCount > 0 && resInsertSong.rows.length > 0) {
-            const { id } = resInsertSong.rows[0];
-
+        if (resInsertSong.rowCount > 0) {
             await client.query('COMMIT');
             hasTransaction = false;
 
             data = {
-                message:    {
-                    id: id,
-                },
+                message:    'success',
                 statusCode: 200,
             };
         }
@@ -148,7 +143,7 @@ async function getSongs(body) {
                               AND ($8::boolean IS NULL OR si.id IS NOT NULL = $8)
                               AND ($9::boolean IS NULL OR
                                    si."switchTime" IS NOT NULL AND si."endTime" IS NOT NULL = $9)
-                            ORDER BY "${ sortBy }" ${ descending ? 'DESC' : 'ASC' }
+                            ORDER BY "${ sortBy }" ${ descending ? 'DESC' : 'ASC' }, s."id" DESC
                             LIMIT ${ limit } OFFSET ${ offset }`;
         const resSongs = await db.query(querySongs, [
             id,

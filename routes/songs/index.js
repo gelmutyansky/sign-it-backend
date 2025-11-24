@@ -27,12 +27,7 @@ export default async function(fastify, opts) {
                     200: {
                         type:       'object',
                         properties: {
-                            message: {
-                                type:       'object',
-                                properties: {
-                                    id: { type: 'number' },
-                                },
-                            },
+                            message: { type: 'string' },
                         },
                     },
                     400: {

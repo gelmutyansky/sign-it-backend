@@ -81,7 +81,7 @@ async function attachOriginal(params, body) {
                                                                           "lyricsAfterSingPath"  = NULL`;
         const resInsertOriginal = await client.query(queryInsertOriginal, [ songId, videoId ]);
 
-        if (resInsertOriginal.rowCount > 0 && resInsertOriginal.rows.length > 0) {
+        if (resInsertOriginal.rowCount > 0) {
             await client.query('COMMIT');
             hasTransaction = false;
 
@@ -91,7 +91,7 @@ async function attachOriginal(params, body) {
             };
         }
         else {
-            console.error(`${ funcName } Не получилось привязать оригинал к песне (songId: ${ songId }, videoId: ${ videoId } )`);
+            console.error(`${ funcName } Не получилось привязать оригинал к песне (songId: ${ songId }, videoId: ${ videoId })`);
         }
     }
     catch (e) {

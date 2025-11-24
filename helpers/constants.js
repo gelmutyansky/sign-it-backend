@@ -3,5 +3,6 @@ export const sortableColumns = {
         'id',
         'artist',
         'name',
+        'difficulty'
     ],
 };
