@@ -168,6 +168,7 @@ async function detachInstrumental(params) {
  * @param { Object } body
  * @param { number } body.switchTime - время начала инструментальной версии (при переходе с оригинала) (сек)
  * @param { number } body.endTime - окончание инструментальной версии (сек)
+ * @param { boolean } body.isUsed - использовать ли инструментальную версию
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
 async function setTimes(params, body) {
@@ -188,6 +189,7 @@ async function setTimes(params, body) {
         const {
             switchTime,
             endTime,
+            isUsed,
         } = body;
 
         const isTimeCorrect = switchTime <= endTime;
@@ -227,9 +229,16 @@ async function setTimes(params, body) {
 
         const queryUpdateTimes = `UPDATE song_instrumentals
                                   SET "switchTime" = $2,
-                                      "endTime"    = $3
+                                      "endTime"    = $3,
+                                      "isUsed"     = $4
                                   WHERE "songId" = $1`;
-        const resUpdateTimes = await client.query(queryUpdateTimes, [ songId, switchTime, endTime ]);
+        const paramsUpdateTimes = [
+            songId,
+            switchTime,
+            endTime,
+            isUsed,
+        ];
+        const resUpdateTimes = await client.query(queryUpdateTimes, paramsUpdateTimes);
 
         if (resUpdateTimes.rowCount > 0) {
             await client.query('COMMIT');
@@ -241,7 +250,7 @@ async function setTimes(params, body) {
             };
         }
         else {
-            console.error(`${ funcName } Метки времени в инструментальной версии не обновлены (songId: ${ songId }, switchTime: ${ switchTime }, endTime: ${ endTime })`);
+            console.error(`${ funcName } Метки времени в инструментальной версии не обновлены (paramsUpdateTimes: ${ JSON.stringify(paramsUpdateTimes) })`);
         }
     }
     catch (e) {

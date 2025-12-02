@@ -102,21 +102,30 @@ export default async function(fastify, opts) {
                 body:     {
                     type:       'object',
                     properties: {
-                        startTime:  {
+                        startTime:              {
                             type:    'number',
                             minimum: 0,
                         },
-                        switchTime: {
+                        switchTime:             {
                             type:    'number',
                             minimum: 0,
                         },
-                        singTime:   {
+                        singTime:               {
                             type:    'number',
                             minimum: 0,
                         },
-                        endTime:    {
+                        endTime:                {
                             type:    'number',
                             minimum: 0,
+                        },
+                        showVideoBeforeSinging: {
+                            type: 'boolean',
+                        },
+                        showVideoDuringSinging: {
+                            type: 'boolean',
+                        },
+                        showVideoAfterSinging:  {
+                            type: 'boolean',
                         },
                     },
                     required:   [
@@ -124,6 +133,9 @@ export default async function(fastify, opts) {
                         'switchTime',
                         'singTime',
                         'endTime',
+                        'showVideoBeforeSinging',
+                        'showVideoDuringSinging',
+                        'showVideoAfterSinging',
                     ],
                 },
                 response: {

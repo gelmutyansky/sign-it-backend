@@ -201,7 +201,10 @@ async function detachOriginal(params) {
  * @param { number } body.startTime - время начала оригинала (сек)
  * @param { number } body.switchTime - время переключения на инструментальную версию (сек)
  * @param { number } body.singTime - время начала пения (сек)
- * @param { number } body.endTime - время окончания оригининала
+ * @param { number } body.endTime - время окончания оригинала
+ * @param { boolean } body.showVideoBeforeSinging - показывать ли видео до пения
+ * @param { boolean } body.showVideoDuringSinging - показывать ли видео во время пения
+ * @param { boolean } body.showVideoAfterSinging - показывать ли видео после пения (во время результата)
  * @returns { Promise<{ message: string, statusCode: number }>}
  * */
 async function setTimes(params, body) {
@@ -224,6 +227,9 @@ async function setTimes(params, body) {
             switchTime,
             singTime,
             endTime,
+            showVideoBeforeSinging,
+            showVideoDuringSinging,
+            showVideoAfterSinging,
         } = body;
 
         const isTimeCorrect = startTime <= switchTime
@@ -264,12 +270,25 @@ async function setTimes(params, body) {
         hasTransaction = true;
 
         const queryUpdateTimes = `UPDATE song_originals
-                                  SET "startTime"  = $2,
-                                      "switchTime" = $3,
-                                      "singTime"   = $4,
-                                      "endTime"    = $5
+                                  SET "startTime"              = $2,
+                                      "switchTime"             = $3,
+                                      "singTime"               = $4,
+                                      "endTime"                = $5,
+                                      "showVideoBeforeSinging" = $6,
+                                      "showVideoDuringSinging" = $7,
+                                      "showVideoAfterSinging"  = $8
                                   WHERE "songId" = $1`;
-        const resUpdateTimes = await client.query(queryUpdateTimes, [ songId, startTime, switchTime, singTime, endTime ]);
+        const paramsUpdateTimes = [
+            songId,
+            startTime,
+            switchTime,
+            singTime,
+            endTime,
+            showVideoBeforeSinging,
+            showVideoDuringSinging,
+            showVideoAfterSinging,
+        ];
+        const resUpdateTimes = await client.query(queryUpdateTimes, paramsUpdateTimes);
 
         if (resUpdateTimes.rowCount > 0) {
             await client.query('COMMIT');
@@ -281,7 +300,7 @@ async function setTimes(params, body) {
             };
         }
         else {
-            console.error(`${ funcName } Метки времени в оригинале не обновлены (songId: ${ songId }, startTime: ${ startTime }, switchTime: ${ switchTime }, singTime: ${ singTime }, endTime: ${ endTime })`);
+            console.error(`${ funcName } Метки времени в оригинале не обновлены (paramsUpdateTimes: ${ JSON.stringify(paramsUpdateTimes) })`);
         }
     }
     catch (e) {

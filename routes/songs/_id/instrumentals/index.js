@@ -52,7 +52,7 @@ export default async function(fastify, opts) {
         '/detach',
         {
             schema: {
-                params:     {
+                params:   {
                     type:       'object',
                     properties: {
                         id: { type: 'number' },
@@ -90,7 +90,7 @@ export default async function(fastify, opts) {
         '/times/set',
         {
             schema: {
-                params:     {
+                params:   {
                     type:       'object',
                     properties: {
                         id: { type: 'number' },
@@ -110,10 +110,14 @@ export default async function(fastify, opts) {
                             type:    'number',
                             minimum: 0,
                         },
+                        isUsed:     {
+                            type: 'boolean',
+                        },
                     },
                     required:   [
                         'switchTime',
                         'endTime',
+                        'isUsed',
                     ],
                 },
                 response: {
