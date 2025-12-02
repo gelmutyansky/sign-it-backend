@@ -101,23 +101,23 @@ export default async function(fastify, opts) {
                                             original:     {
                                                 type:       'object',
                                                 properties: {
-                                                    startTime:            {
+                                                    startTime:              {
                                                         type:     'integer',
                                                         nullable: true,
                                                     },
-                                                    switchTime:           {
+                                                    switchTime:             {
                                                         type:     'integer',
                                                         nullable: true,
                                                     },
-                                                    singTime:             {
+                                                    singTime:               {
                                                         type:     'integer',
                                                         nullable: true,
                                                     },
-                                                    endTime:              {
+                                                    endTime:                {
                                                         type:     'integer',
                                                         nullable: true,
                                                     },
-                                                    lyrics:               {
+                                                    lyrics:                 {
                                                         type:     'array',
                                                         items:    {
                                                             type:       'object',
@@ -138,37 +138,46 @@ export default async function(fastify, opts) {
                                                         },
                                                         nullable: true,
                                                     },
-                                                    lyricsBeforeSingPath: {
+                                                    lyricsBeforeSingPath:   {
                                                         type:     'string',
                                                         nullable: true,
                                                     },
-                                                    lyricsAfterSingPath:  {
+                                                    lyricsAfterSingPath:    {
                                                         type:     'string',
                                                         nullable: true,
                                                     },
-                                                    videoId:              {
+                                                    videoId:                {
                                                         type: 'integer',
                                                     },
-                                                    youtubeId:            {
-                                                        type:     'string',
-                                                        nullable: true,
-                                                    },
-                                                    path:                 {
-                                                        type:     'string',
-                                                        nullable: true,
-                                                    },
-                                                    isAudioOnly:          {
+                                                    showVideoBeforeSinging: {
                                                         type: 'boolean',
                                                     },
-                                                    thumbnailPath:        {
+                                                    showVideoDuringSinging: {
+                                                        type: 'boolean',
+                                                    },
+                                                    showVideoAfterSinging:  {
+                                                        type: 'boolean',
+                                                    },
+                                                    youtubeId:              {
                                                         type:     'string',
                                                         nullable: true,
                                                     },
-                                                    duration:             {
+                                                    path:                   {
+                                                        type:     'string',
+                                                        nullable: true,
+                                                    },
+                                                    isAudioOnly:            {
+                                                        type: 'boolean',
+                                                    },
+                                                    thumbnailPath:          {
+                                                        type:     'string',
+                                                        nullable: true,
+                                                    },
+                                                    duration:               {
                                                         type:     'integer',
                                                         nullable: true,
                                                     },
-                                                    thumbnailUrl:         {
+                                                    thumbnailUrl:           {
                                                         type:     'string',
                                                         nullable: true,
                                                     },
@@ -188,6 +197,9 @@ export default async function(fastify, opts) {
                                                     },
                                                     videoId:       {
                                                         type: 'integer',
+                                                    },
+                                                    isUsed:        {
+                                                        type: 'boolean',
                                                     },
                                                     youtubeId:     {
                                                         type:     'string',

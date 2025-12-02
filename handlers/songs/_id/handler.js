@@ -75,7 +75,7 @@ async function editSong(params, body) {
  * Получение информации о песне
  * @param { Object } params
  * @param { number } params.id
- * @returns { Promise<{ message: string | { artist: string, name: string, difficulty: number | null, original: { startTime: number | null, switchTime: number | null, singTime: number | null, endTime: number | null, lyrics: Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>, lyricsBeforeSingPath: string | null, lyricsAfterSingPath: string | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null }, instrumental: { switchTime: number | null, endTime: number | null, videoId: number, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null } }, statusCode: number }>}
+ * @returns { Promise<{ message: string | { artist: string, name: string, difficulty: number | null, original: { startTime: number | null, switchTime: number | null, singTime: number | null, endTime: number | null, lyrics: Array<{ startTime: number, endTime: number, mustSing: boolean, verse: string }>, lyricsBeforeSingPath: string | null, lyricsAfterSingPath: string | null, videoId: number, showVideoBeforeSinging: boolean, showVideoDuringSinging: boolean, showVideoAfterSinging: boolean, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null }, instrumental: { switchTime: number | null, endTime: number | null, videoId: number, isUsed: boolean, path: string | null, isAudioOnly: boolean, thumbnailPath: string | null, duration: number | null, thumbnailUrl: string | null } }, statusCode: number }>}
  * */
 async function getSong(params) {
     let data = {
@@ -105,20 +105,23 @@ async function getSong(params) {
             const { hasOriginal, hasInstrumental, ...song } = resSong.rows[0];
 
             if (hasOriginal) {
-                const queryOriginal = `SELECT so."startTime"            AS "startTime",
-                                              so."switchTime"           AS "switchTime",
-                                              so."singTime"             AS "singTime",
-                                              so."endTime"              AS "endTime",
-                                              so."lyrics"               AS "lyrics",
-                                              so."lyricsBeforeSingPath" AS "lyricsBeforeSingPath",
-                                              so."lyricsAfterSingPath"  AS "lyricsAfterSingPath",
-                                              so."videoId"              AS "videoId",
-                                              v."youtubeId"             AS "youtubeId",
-                                              v."path"                  AS "path",
-                                              v."isAudioOnly"           AS "isAudioOnly",
-                                              v."thumbnailPath"         AS "thumbnailPath",
-                                              v."duration"              AS "duration",
-                                              v."thumbnailUrl"          AS "thumbnailUrl"
+                const queryOriginal = `SELECT so."startTime"              AS "startTime",
+                                              so."switchTime"             AS "switchTime",
+                                              so."singTime"               AS "singTime",
+                                              so."endTime"                AS "endTime",
+                                              so."lyrics"                 AS "lyrics",
+                                              so."lyricsBeforeSingPath"   AS "lyricsBeforeSingPath",
+                                              so."lyricsAfterSingPath"    AS "lyricsAfterSingPath",
+                                              so."videoId"                AS "videoId",
+                                              so."showVideoBeforeSinging" AS "showVideoBeforeSinging",
+                                              so."showVideoDuringSinging" AS "showVideoDuringSinging",
+                                              so."showVideoAfterSinging"  AS "showVideoAfterSinging",
+                                              v."youtubeId"               AS "youtubeId",
+                                              v."path"                    AS "path",
+                                              v."isAudioOnly"             AS "isAudioOnly",
+                                              v."thumbnailPath"           AS "thumbnailPath",
+                                              v."duration"                AS "duration",
+                                              v."thumbnailUrl"            AS "thumbnailUrl"
                                        FROM song_originals so
                                                 INNER JOIN videos v
                                                            on so."videoId" = v.id
@@ -141,6 +144,7 @@ async function getSong(params) {
                 const queryInstrumental = `SELECT si."switchTime"   AS "switchTime",
                                                   si."endTime"      AS "endTime",
                                                   si."videoId"      AS "videoId",
+                                                  si."isUsed"       AS "isUsed",
                                                   v."youtubeId"     AS "youtubeId",
                                                   v."path"          AS "path",
                                                   v."isAudioOnly"   AS "isAudioOnly",
