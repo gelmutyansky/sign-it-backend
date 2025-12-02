@@ -36,6 +36,6 @@
   },
   "devDependencies": {
     "c8": "^10.1.2",
-    "node-pg-migrate": "^8.0.3"
+    "node-pg-migrate": "^7.6.1"
   }
 }
