@@ -193,6 +193,7 @@ async function downloadVideoFromYoutube({ id }) {
                 onProgress: (progress) => {
                     console.log(progress);
                 },
+                cookiesFromBrowser: 'firefox',
                 ...downloadOptions,
             },
         );
@@ -296,7 +297,9 @@ async function fetchVideoFromYoutube({ id }) {
             duration:  duration,
             fulltitle: title,
             subtitles: subtitles,
-        } = await ytDlp.getInfoAsync(youtubeUrl);
+        } = await ytDlp.getInfoAsync(youtubeUrl, {
+            cookiesFromBrowser: 'firefox'
+        });
 
         let thumbnailPath = oldThumbnailPath;
 
