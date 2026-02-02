@@ -29,7 +29,7 @@
     "fastify-plugin": "^5.0.0",
     "fs-extra": "^11.3.2",
     "get-video-id": "^4.1.7",
-    "pg": "^8.16.3",
+    "pg": "^8.17.2",
     "sinful-math": "^0.0.1",
     "vtt-creator": "^1.1.1",
     "ytdlp-nodejs": "^2.3.5"
